@@ -8,5 +8,6 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts'],
   coverageDirectory: 'coverage',
   testTimeout: 30000,
+  maxWorkers: 1,
 };
 

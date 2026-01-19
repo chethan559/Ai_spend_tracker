@@ -1,0 +1,54 @@
+### Create single log (API key)
+POST http://localhost:3001/api/v1/log
+Authorization: Bearer ast_YOUR_API_KEY
+Content-Type: application/json
+
+{
+  "provider": "openai",
+  "model": "gpt-4",
+  "tokens": 1500,
+  "cost": 0.045,
+  "metadata": {
+    "userId": "user123",
+    "feature": "chatbot"
+  }
+}
+
+### Create batch logs (API key)
+POST http://localhost:3001/api/v1/log/batch
+Authorization: Bearer ast_YOUR_API_KEY
+Content-Type: application/json
+
+[
+  {
+    "provider": "openai",
+    "model": "gpt-3.5-turbo",
+    "tokens": 500,
+    "cost": 0.001,
+    "metadata": { "feature": "summarizer" }
+  },
+  {
+    "provider": "anthropic",
+    "model": "claude-3-sonnet",
+    "tokens": 2000,
+    "cost": 0.012,
+    "metadata": { "feature": "chatbot" }
+  }
+]
+
+### Get overview stats (JWT)
+GET http://localhost:3001/api/v1/stats/overview
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### Get daily stats (JWT)
+GET http://localhost:3001/api/v1/stats/daily?days=7
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### Get provider breakdown (JWT)
+GET http://localhost:3001/api/v1/stats/by-provider
+Authorization: Bearer YOUR_JWT_TOKEN
+
+### Get model breakdown (JWT)
+GET http://localhost:3001/api/v1/stats/by-model
+Authorization: Bearer YOUR_JWT_TOKEN
+

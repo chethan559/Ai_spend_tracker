@@ -39,8 +39,10 @@ model ApiLog {
   user    User     @relation(fields: [userId], references: [id])
   project Project? @relation(fields: [projectId], references: [id])
 
-  @@index([userId])
-  @@index([projectId])
+  @@index([userId, timestamp])
+  @@index([userId, provider, timestamp])
+  @@index([userId, projectId, timestamp])
+  @@index([timestamp])
 }
 
 model Project {

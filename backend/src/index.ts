@@ -8,6 +8,8 @@ import { prisma } from './config/database';
 import { logger } from './utils/logger';
 import { authRouter } from './routes/auth.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { logsRouter } from './routes/logs.routes';
+import { statsRouter } from './routes/stats.routes';
 
 // Load environment variables from .env.
 dotenv.config();
@@ -27,6 +29,12 @@ app.use(morgan('dev'));
 
 // Auth routes.
 app.use('/auth', authRouter);
+
+// API log ingestion routes (used by SDK).
+app.use('/api/v1/log', logsRouter);
+
+// Analytics routes (used by dashboard).
+app.use('/api/v1/stats', statsRouter);
 
 // Health check route.
 app.get('/health', (_req, res) => {

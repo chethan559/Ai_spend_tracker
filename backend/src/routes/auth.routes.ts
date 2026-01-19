@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { getProfile, login, signup } from '../controllers/auth.controller';
 import { authenticateJWT } from '../middleware/auth';
+import { authRateLimiter } from '../middleware/rateLimiter';
 
 const authRouter = Router();
 
@@ -9,13 +10,13 @@ const authRouter = Router();
  * POST /signup
  * Public endpoint to create a new user.
  */
-authRouter.post('/signup', signup);
+authRouter.post('/signup', authRateLimiter, signup);
 
 /**
  * POST /login
  * Public endpoint to authenticate a user.
  */
-authRouter.post('/login', login);
+authRouter.post('/login', authRateLimiter, login);
 
 /**
  * GET /profile

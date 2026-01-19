@@ -6,15 +6,24 @@ import { prisma } from '../config/database';
 describe('POST /auth/signup', () => {
   const baseEmail = 'user@example.com';
 
+  const cleanupDb = async () => {
+    await prisma.apiLog.deleteMany();
+    await prisma.budget.deleteMany();
+    await prisma.project.deleteMany();
+    await prisma.user.deleteMany();
+  };
+
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
+    await cleanupDb();
   });
 
   beforeEach(async () => {
-    await prisma.user.deleteMany();
+    await cleanupDb();
   });
 
   afterAll(async () => {
+    await cleanupDb();
     await prisma.$disconnect();
     if (server) {
       server.close();
@@ -87,6 +96,9 @@ describe('POST /auth/signup', () => {
 
 describe('POST /auth/login', () => {
   beforeEach(async () => {
+    await prisma.apiLog.deleteMany();
+    await prisma.budget.deleteMany();
+    await prisma.project.deleteMany();
     await prisma.user.deleteMany();
   });
 
@@ -155,6 +167,9 @@ describe('POST /auth/login', () => {
 
 describe('GET /auth/profile', () => {
   beforeEach(async () => {
+    await prisma.apiLog.deleteMany();
+    await prisma.budget.deleteMany();
+    await prisma.project.deleteMany();
     await prisma.user.deleteMany();
   });
 
@@ -193,6 +208,9 @@ describe('GET /auth/profile', () => {
 
 describe('GET /auth/verify', () => {
   beforeEach(async () => {
+    await prisma.apiLog.deleteMany();
+    await prisma.budget.deleteMany();
+    await prisma.project.deleteMany();
     await prisma.user.deleteMany();
   });
 
