@@ -1,4 +1,4 @@
-import express, { type ErrorRequestHandler } from 'express';
+import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -6,11 +6,13 @@ import morgan from 'morgan';
 
 import { prisma } from './config/database';
 import { logger } from './utils/logger';
+import { authRouter } from './routes/auth.routes';
+import { errorHandler } from './middleware/errorHandler';
 
 // Load environment variables from .env.
 dotenv.config();
 
-const app = express();
+export const app = express();
 
 // Security and parsing middleware.
 app.use(helmet());
@@ -22,6 +24,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+
+// Auth routes.
+app.use('/auth', authRouter);
 
 // Health check route.
 app.get('/health', (_req, res) => {
@@ -44,15 +49,13 @@ app.use((_req, res) => {
   res.status(404).json({ status: 'error', message: 'Not found' });
 });
 
-// Global error handler.
-const errorHandler: ErrorRequestHandler = (err, _req, res) => {
-  logger.error('Unhandled error', err as Error);
-  res.status(500).json({ status: 'error', message: 'Internal server error' });
-};
 app.use(errorHandler);
 
 const port = Number(process.env.PORT) || 3001;
-app.listen(port, () => {
-  logger.info(`Server running on port ${port}`);
-});
+export const server =
+  process.env.NODE_ENV === 'test'
+    ? null
+    : app.listen(port, () => {
+        logger.info(`Server running on port ${port}`);
+      });
 

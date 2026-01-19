@@ -1,0 +1,26 @@
+### Signup - create a new user
+POST http://localhost:3001/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Login - get a JWT token
+POST http://localhost:3001/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Get Profile - replace token after login
+GET http://localhost:3001/auth/profile
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Verify Token - check if token is still valid
+GET http://localhost:3001/auth/verify
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
