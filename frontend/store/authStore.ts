@@ -1,30 +1,31 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '../types';
 
 interface AuthState {
   user: User | null;
   token: string | null;
-  isAuthenticated: boolean;
+  isAuthenticated: () => boolean;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   login: (user: User, token: string) => void;
   logout: () => void;
 }
 
+const storage =
+  typeof window !== 'undefined'
+    ? createJSONStorage(() => localStorage)
+    : undefined;
+
 const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
-      isAuthenticated: false,
-      setUser: (user) =>
-        set({
-          user,
-          isAuthenticated: Boolean(user),
-        }),
+      isAuthenticated: () => Boolean(get().token),
+      setUser: (user) => set({ user }),
       setToken: (token) => {
         if (typeof window !== 'undefined') {
           if (token) {
@@ -33,26 +34,27 @@ const useAuthStore = create<AuthState>()(
             localStorage.removeItem('auth-token');
           }
         }
-        set({
-          token,
-          isAuthenticated: Boolean(token),
-        });
+        set({ token });
       },
       login: (user, token) => {
         if (typeof window !== 'undefined') {
           localStorage.setItem('auth-token', token);
         }
-        set({ user, token, isAuthenticated: true });
+        set({ user, token });
       },
       logout: () => {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('auth-token');
+          localStorage.removeItem('auth-user');
+          localStorage.removeItem('auth-storage');
         }
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, token: null });
       },
     }),
     {
-      name: 'auth-store',
+      name: 'auth-storage',
+      storage,
+      partialize: (state) => ({ user: state.user, token: state.token }),
     },
   ),
 );

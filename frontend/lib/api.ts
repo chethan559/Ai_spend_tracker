@@ -29,21 +29,35 @@ api.interceptors.request.use((config) => {
       headers.set('Authorization', `Bearer ${token}`);
       config.headers = headers;
     }
+
+    if (process.env.NODE_ENV === 'development') {
+      const method = config.method?.toUpperCase() ?? 'GET';
+      const url = config.url ?? '';
+      console.debug(`[API] ${method} ${url}`);
+    }
   }
+
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => response.data,
   (error: AxiosError<{ message?: string }>) => {
     const status = error.response?.status;
 
-    if (status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('auth-token');
-      window.location.href = '/login';
-    } else if (typeof window !== 'undefined') {
-      const message = error.response?.data?.message || error.message || 'Request failed';
-      toast.error(message);
+    if (typeof window !== 'undefined') {
+      if (status === 401) {
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('auth-user');
+        toast.error('Session expired, please login');
+        window.location.href = '/login';
+      } else {
+        const message =
+          error.response?.data?.message ||
+          error.message ||
+          'Request failed';
+        toast.error(message);
+      }
     }
 
     return Promise.reject(error);
@@ -101,40 +115,55 @@ export interface LogsResponse {
  * Sign up a new user account.
  */
 export async function signup(email: string, password: string): Promise<SignupResponse> {
-  const response = await api.post<SignupResponse>('/auth/signup', { email, password });
-  return response.data;
+  try {
+    return await api.post<SignupResponse>('/auth/signup', { email, password });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
  * Log in with email and password.
  */
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const response = await api.post<LoginResponse>('/auth/login', { email, password });
-  return response.data;
+  try {
+    return await api.post<LoginResponse>('/auth/login', { email, password });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
  * Fetch the authenticated user's profile.
  */
 export async function getProfile(): Promise<ProfileResponse> {
-  const response = await api.get<ProfileResponse>('/auth/profile');
-  return response.data;
+  try {
+    return await api.get<ProfileResponse>('/auth/profile');
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
  * Create a new API log entry.
  */
 export async function createLog(log: CreateLogInput): Promise<CreateLogResponse> {
-  const response = await api.post<CreateLogResponse>('/api/v1/log', log);
-  return response.data;
+  try {
+    return await api.post<CreateLogResponse>('/api/v1/log', log);
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
  * Fetch API logs with pagination and filters.
  */
 export async function getLogs(params: LogsQueryParams = {}): Promise<LogsResponse> {
-  const response = await api.get<LogsResponse>('/api/v1/log', { params });
-  return response.data;
+  try {
+    return await api.get<LogsResponse>('/api/v1/log', { params });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
@@ -144,20 +173,26 @@ export async function getOverview(
   startDate?: string,
   endDate?: string,
 ): Promise<StatsOverview> {
-  const response = await api.get<StatsOverview>('/api/v1/stats/overview', {
-    params: { startDate, endDate },
-  });
-  return response.data;
+  try {
+    return await api.get<StatsOverview>('/api/v1/stats/overview', {
+      params: { startDate, endDate },
+    });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
  * Get daily stats for the last N days.
  */
 export async function getDailyStats(days: number): Promise<DailyStat[]> {
-  const response = await api.get<DailyStat[]>('/api/v1/stats/daily', {
-    params: { days },
-  });
-  return response.data;
+  try {
+    return await api.get<DailyStat[]>('/api/v1/stats/daily', {
+      params: { days },
+    });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
@@ -167,10 +202,13 @@ export async function getProviderBreakdown(
   startDate?: string,
   endDate?: string,
 ): Promise<ProviderStat[]> {
-  const response = await api.get<ProviderStat[]>('/api/v1/stats/providers', {
-    params: { startDate, endDate },
-  });
-  return response.data;
+  try {
+    return await api.get<ProviderStat[]>('/api/v1/stats/providers', {
+      params: { startDate, endDate },
+    });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
@@ -180,8 +218,11 @@ export async function getModelBreakdown(
   startDate?: string,
   endDate?: string,
 ): Promise<ModelStat[]> {
-  const response = await api.get<ModelStat[]>('/api/v1/stats/models', {
-    params: { startDate, endDate },
-  });
-  return response.data;
+  try {
+    return await api.get<ModelStat[]>('/api/v1/stats/models', {
+      params: { startDate, endDate },
+    });
+  } catch (error) {
+    throw error;
+  }
 }

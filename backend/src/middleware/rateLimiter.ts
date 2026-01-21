@@ -11,10 +11,10 @@ const getApiKey = (req: Request): string =>
   req.ip ||
   'unknown';
 
-const isTest = process.env.NODE_ENV === 'test';
+const isRateLimited = process.env.NODE_ENV === 'production';
 
 const createLimiter = (handler: RequestHandler): RequestHandler =>
-  isTest ? (_req, _res, next) => next() : handler;
+  isRateLimited ? handler : (_req, _res, next) => next();
 
 /**
  * Rate limiter for log ingestion endpoints (per API key).
