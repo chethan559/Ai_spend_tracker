@@ -5,8 +5,9 @@ import {
   createLogHandler,
   getLogsHandler,
 } from '../controllers/logs.controller';
-import { authenticateApiKey } from '../middleware/auth';
+import { authenticateAny, authenticateApiKey } from '../middleware/auth';
 import { logRateLimiter } from '../middleware/rateLimiter';
+import { recalculateCosts } from '../middleware/recalculateCosts';
 
 const logsRouter = Router();
 
@@ -26,6 +27,7 @@ logsRouter.post(
   '/batch',
   logRateLimiter,
   authenticateApiKey,
+  recalculateCosts,
   createBatchLogsHandler,
 );
 
@@ -34,7 +36,7 @@ logsRouter.post(
  * Fetch recent logs for dashboard tables.
  * Example: GET /?limit=50&skip=0&provider=openai&projectId=uuid
  */
-logsRouter.get('/', authenticateApiKey, getLogsHandler);
+logsRouter.get('/', authenticateAny, getLogsHandler);
 
 export { logsRouter };
 
