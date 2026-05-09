@@ -74,3 +74,48 @@ export interface Budget {
   currentSpend?: number;
   percentage?: number;
 }
+
+/**
+ * Breakdown of spend and usage for a single metadata field value.
+ */
+export interface MetadataStat {
+  value: string;
+  totalCost: number;
+  requestCount: number;
+  avgCost: number;
+}
+
+export interface ProviderDetailModel {
+  model: string;
+  cost: number;
+  requests: number;
+}
+
+export interface ProviderDetail {
+  provider: string;
+  status: 'active' | 'idle' | 'no_data';
+  lastActivity: string | null;
+  thisMonth: { cost: number; requests: number };
+  lastMonth: { cost: number; requests: number };
+  momChange: number | null;
+  topModel: string | null;
+  avgCostPerRequest: number;
+  daily: DailyStat[];
+  topModels: ProviderDetailModel[];
+  peakDay: { date: string; cost: number } | null;
+  projectedMonthCost: number | null;
+}
+
+export interface TotalSpendProvider {
+  provider: string;
+  cost: number;
+  requests: number;
+}
+
+export interface TotalSpendResult {
+  totalCost: number;
+  totalRequests: number;
+  byProvider: TotalSpendProvider[];
+  weekOverWeekChange: number | null;
+  dateRange: { start: string; end: string };
+}

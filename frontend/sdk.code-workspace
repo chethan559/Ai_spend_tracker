@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "sdk",
+			"path": "../sdk"
+		},
+		{
+			"name": "backend",
+			"path": "../backend"
+		},
+		{
+			"name": "frontend",
+			"path": "."
+		}
+	],
+	"settings": {}
+}

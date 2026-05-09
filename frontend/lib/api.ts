@@ -5,9 +5,12 @@ import { toast } from 'sonner';
 import type {
   ApiLog,
   DailyStat,
+  MetadataStat,
   ModelStat,
+  ProviderDetail,
   ProviderStat,
   StatsOverview,
+  TotalSpendResult,
   User,
 } from '../types';
 
@@ -111,6 +114,33 @@ export interface LogsResponse {
   };
 }
 
+export interface DailyStatsResponse {
+  stats: DailyStat[];
+  period: {
+    days: number;
+    startDate: string;
+    endDate: string;
+  };
+}
+
+export interface ProviderBreakdownResponse {
+  providers: ProviderStat[];
+  totalSpend: number;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+}
+
+export interface ModelBreakdownResponse {
+  models: ModelStat[];
+  totalSpend: number;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+}
+
 /**
  * Sign up a new user account.
  */
@@ -187,9 +217,10 @@ export async function getOverview(
  */
 export async function getDailyStats(days: number): Promise<DailyStat[]> {
   try {
-    return await api.get<DailyStat[]>('/api/v1/stats/daily', {
+    const response = await api.get<DailyStatsResponse>('/api/v1/stats/daily', {
       params: { days },
     });
+    return response.stats;
   } catch (error) {
     throw error;
   }
@@ -203,9 +234,10 @@ export async function getProviderBreakdown(
   endDate?: string,
 ): Promise<ProviderStat[]> {
   try {
-    return await api.get<ProviderStat[]>('/api/v1/stats/providers', {
+    const response = await api.get<ProviderBreakdownResponse>('/api/v1/stats/by-provider', {
       params: { startDate, endDate },
     });
+    return response.providers;
   } catch (error) {
     throw error;
   }
@@ -219,8 +251,85 @@ export async function getModelBreakdown(
   endDate?: string,
 ): Promise<ModelStat[]> {
   try {
-    return await api.get<ModelStat[]>('/api/v1/stats/models', {
+    const response = await api.get<ModelBreakdownResponse>('/api/v1/stats/by-model', {
       params: { startDate, endDate },
+    });
+    return response.models;
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Get metadata field value breakdown for a date range.
+ */
+export async function getMetadataStats(
+  field: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<MetadataStat[]> {
+  const res: any = await api.get<any>('/api/v1/stats/by-metadata', {
+    params: { field, startDate, endDate },
+  });
+  const rows: { value: string; spend: number; requests: number }[] =
+    res?.breakdown ?? res ?? [];
+  return rows.map((r) => ({
+    value: r.value,
+    totalCost: r.spend,
+    requestCount: r.requests,
+    avgCost: r.requests > 0 ? r.spend / r.requests : 0,
+  }));
+}
+
+/**
+ * Get total spend with provider breakdown and period-over-period change.
+ */
+export async function getTotalSpend(
+  startDate?: string,
+  endDate?: string,
+): Promise<TotalSpendResult> {
+  try {
+    return await api.get<TotalSpendResult>('/api/v1/stats/total-spend', {
+      params: { startDate, endDate },
+    });
+  } catch (error) {
+    throw error;
+  }
+}
+
+export interface ProviderDetailResponse {
+  providers: ProviderDetail[];
+}
+
+export async function getProviderDetail(): Promise<ProviderDetailResponse> {
+  try {
+    return await api.get<ProviderDetailResponse>('/api/v1/stats/by-provider-detail');
+  } catch (error) {
+    throw error;
+  }
+}
+
+export interface FeatureLogsParams {
+  metadataField: string;
+  metadataValue: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+}
+
+/**
+ * Fetch logs filtered by a metadata field/value pair.
+ */
+export async function getFeatureLogs(params: FeatureLogsParams): Promise<LogsResponse> {
+  try {
+    return await api.get<LogsResponse>('/api/v1/log', {
+      params: {
+        metadata_field: params.metadataField,
+        metadata_value: params.metadataValue,
+        startDate: params.startDate,
+        endDate: params.endDate,
+        limit: params.limit ?? 200,
+      },
     });
   } catch (error) {
     throw error;
