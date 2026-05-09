@@ -1,4 +1,4 @@
-import { format, startOfDay, subDays } from 'date-fns';
+import { endOfMonth, format, startOfDay, startOfMonth, subDays, subMonths } from 'date-fns';
 
 import { Prisma } from '@prisma/client';
 
@@ -27,7 +27,9 @@ export interface ModelStat {
   provider: string;
   spend: number;
   requests: number;
-  tokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
 }
 
 export interface ProjectStat {
@@ -41,6 +43,20 @@ export interface MetadataStat {
   value: string;
   spend: number;
   requests: number;
+}
+
+export interface TotalSpendProvider {
+  provider: string;
+  cost: number;
+  requests: number;
+}
+
+export interface TotalSpendResult {
+  totalCost: number;
+  totalRequests: number;
+  byProvider: TotalSpendProvider[];
+  weekOverWeekChange: number | null;
+  dateRange: { start: string; end: string };
 }
 
 /**
@@ -136,14 +152,16 @@ export async function getModelBreakdown(
       provider: string;
       spend: number;
       requests: bigint;
-      tokens: number;
+      inputTokens: number;
+      outputTokens: number;
     }[]
   >`
     SELECT model,
            provider,
-           COALESCE(SUM(cost), 0) AS spend,
-           COUNT(*) AS requests,
-           COALESCE(SUM(tokens), 0) AS tokens
+           COALESCE(SUM(cost), 0)          AS spend,
+           COUNT(*)                         AS requests,
+           COALESCE(SUM("inputTokens"), 0)  AS "inputTokens",
+           COALESCE(SUM("outputTokens"), 0) AS "outputTokens"
     FROM "ApiLog"
     WHERE "userId" = ${userId}
       AND "timestamp" >= ${rangeStart}
@@ -157,7 +175,9 @@ export async function getModelBreakdown(
     provider: row.provider,
     spend: Number(row.spend),
     requests: Number(row.requests),
-    tokens: Number(row.tokens),
+    inputTokens: Number(row.inputTokens),
+    outputTokens: Number(row.outputTokens),
+    totalTokens: Number(row.inputTokens) + Number(row.outputTokens),
   }));
 }
 
@@ -233,5 +253,231 @@ export async function getMetadataStats(
     spend: Number(row.spend),
     requests: Number(row.requests),
   }));
+}
+
+export interface ProviderDetailModel {
+  model: string;
+  cost: number;
+  requests: number;
+}
+
+export interface ProviderDetail {
+  provider: string;
+  status: 'active' | 'idle' | 'no_data';
+  lastActivity: string | null;
+  thisMonth: { cost: number; requests: number };
+  lastMonth: { cost: number; requests: number };
+  momChange: number | null;
+  topModel: string | null;
+  avgCostPerRequest: number;
+  daily: DailyStat[];
+  topModels: ProviderDetailModel[];
+  peakDay: { date: string; cost: number } | null;
+  projectedMonthCost: number | null;
+}
+
+const KNOWN_PROVIDERS = ['openai', 'anthropic', 'google', 'cohere', 'replicate'];
+
+/**
+ * Get per-provider breakdown with daily history and MoM comparison.
+ */
+export async function getProviderDetail(userId: string): Promise<ProviderDetail[]> {
+  const now = new Date();
+  const thisMonthStart = startOfMonth(now);
+  const lastMonthStart = startOfMonth(subMonths(now, 1));
+  const thirtyDaysAgo = startOfDay(subDays(now, 29));
+
+  const monthlyRows = await prisma.$queryRaw<
+    {
+      provider: string;
+      this_cost: number;
+      this_requests: bigint;
+      last_cost: number;
+      last_requests: bigint;
+      last_activity: Date | null;
+    }[]
+  >`
+    SELECT
+      provider,
+      COALESCE(SUM(CASE WHEN "timestamp" >= ${thisMonthStart} THEN cost ELSE 0 END), 0)     AS this_cost,
+      COUNT(CASE WHEN "timestamp" >= ${thisMonthStart} THEN 1 ELSE NULL END)                 AS this_requests,
+      COALESCE(SUM(CASE WHEN "timestamp" >= ${lastMonthStart} AND "timestamp" < ${thisMonthStart} THEN cost ELSE 0 END), 0) AS last_cost,
+      COUNT(CASE WHEN "timestamp" >= ${lastMonthStart} AND "timestamp" < ${thisMonthStart} THEN 1 ELSE NULL END)            AS last_requests,
+      MAX("timestamp") AS last_activity
+    FROM "ApiLog"
+    WHERE "userId" = ${userId}
+      AND "timestamp" >= ${lastMonthStart}
+    GROUP BY provider
+  `;
+
+  const dailyRows = await prisma.$queryRaw<
+    { provider: string; date: Date; spend: number; requests: bigint }[]
+  >`
+    SELECT
+      provider,
+      DATE("timestamp") AS date,
+      COALESCE(SUM(cost), 0) AS spend,
+      COUNT(*) AS requests
+    FROM "ApiLog"
+    WHERE "userId" = ${userId}
+      AND "timestamp" >= ${thirtyDaysAgo}
+    GROUP BY provider, DATE("timestamp")
+    ORDER BY provider, date ASC
+  `;
+
+  const modelRows = await prisma.$queryRaw<
+    { provider: string; model: string; cost: number; requests: bigint }[]
+  >`
+    SELECT
+      provider,
+      model,
+      COALESCE(SUM(cost), 0) AS cost,
+      COUNT(*) AS requests
+    FROM "ApiLog"
+    WHERE "userId" = ${userId}
+      AND "timestamp" >= ${thisMonthStart}
+    GROUP BY provider, model
+    ORDER BY provider, cost DESC
+  `;
+
+  const monthlyMap = new Map(monthlyRows.map((r) => [r.provider, r]));
+
+  const dailyByProvider = new Map<string, { date: string; spend: number; requests: number }[]>();
+  for (const row of dailyRows) {
+    const dateStr = format(row.date, 'yyyy-MM-dd');
+    const arr = dailyByProvider.get(row.provider) ?? [];
+    arr.push({ date: dateStr, spend: Number(row.spend), requests: Number(row.requests) });
+    dailyByProvider.set(row.provider, arr);
+  }
+
+  const modelsByProvider = new Map<string, ProviderDetailModel[]>();
+  for (const row of modelRows) {
+    const arr = modelsByProvider.get(row.provider) ?? [];
+    arr.push({ model: row.model, cost: Number(row.cost), requests: Number(row.requests) });
+    modelsByProvider.set(row.provider, arr);
+  }
+
+  const dataProviders = new Set([
+    ...monthlyMap.keys(),
+    ...dailyByProvider.keys(),
+    ...modelsByProvider.keys(),
+  ]);
+  const allProviders = [...new Set([...KNOWN_PROVIDERS, ...dataProviders])];
+
+  const daysInMonth = endOfMonth(now).getDate();
+  const daysElapsed = now.getDate();
+
+  return allProviders.map((provider) => {
+    const monthly = monthlyMap.get(provider);
+    const rawDaily = dailyByProvider.get(provider) ?? [];
+    const topModels = (modelsByProvider.get(provider) ?? []).slice(0, 3);
+
+    const thisCost = monthly ? Number(monthly.this_cost) : 0;
+    const thisRequests = monthly ? Number(monthly.this_requests) : 0;
+    const lastCost = monthly ? Number(monthly.last_cost) : 0;
+    const lastRequests = monthly ? Number(monthly.last_requests) : 0;
+    const lastActivity = monthly?.last_activity ?? null;
+
+    let status: ProviderDetail['status'] = 'no_data';
+    if (lastActivity) {
+      const daysSince = (now.getTime() - lastActivity.getTime()) / 86_400_000;
+      status = daysSince <= 7 ? 'active' : 'idle';
+    }
+
+    const momChange = lastCost > 0 ? ((thisCost - lastCost) / lastCost) * 100 : null;
+    const avgCostPerRequest = thisRequests > 0 ? thisCost / thisRequests : 0;
+    const topModel = topModels[0]?.model ?? null;
+
+    let peakDay: ProviderDetail['peakDay'] = null;
+    for (const d of rawDaily) {
+      if (!peakDay || d.spend > peakDay.cost) {
+        peakDay = { date: d.date, cost: d.spend };
+      }
+    }
+
+    const projectedMonthCost =
+      daysElapsed > 0 && thisCost > 0
+        ? (thisCost / daysElapsed) * daysInMonth
+        : null;
+
+    const daily = fillMissingDates(
+      rawDaily,
+      thirtyDaysAgo,
+      now,
+      'date',
+      ['spend', 'requests'],
+    ) as DailyStat[];
+
+    return {
+      provider,
+      status,
+      lastActivity: lastActivity?.toISOString() ?? null,
+      thisMonth: { cost: thisCost, requests: thisRequests },
+      lastMonth: { cost: lastCost, requests: lastRequests },
+      momChange,
+      topModel,
+      avgCostPerRequest,
+      daily,
+      topModels,
+      peakDay,
+      projectedMonthCost,
+    };
+  });
+}
+
+/**
+ * Get total spend with provider breakdown and period-over-period change.
+ */
+export async function getTotalSpend(
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+): Promise<TotalSpendResult> {
+  const rows = await prisma.$queryRaw<
+    { provider: string; cost: number; requests: bigint }[]
+  >`
+    SELECT provider,
+           COALESCE(SUM(cost), 0) AS cost,
+           COUNT(*) AS requests
+    FROM "ApiLog"
+    WHERE "userId" = ${userId}
+      AND "timestamp" >= ${startDate}
+      AND "timestamp" <= ${endDate}
+    GROUP BY provider
+    ORDER BY cost DESC
+  `;
+
+  const periodMs = endDate.getTime() - startDate.getTime();
+  const prevEnd = new Date(startDate.getTime() - 1);
+  const prevStart = new Date(prevEnd.getTime() - periodMs);
+
+  const prevRows = await prisma.$queryRaw<{ cost: number }[]>`
+    SELECT COALESCE(SUM(cost), 0) AS cost
+    FROM "ApiLog"
+    WHERE "userId" = ${userId}
+      AND "timestamp" >= ${prevStart}
+      AND "timestamp" <= ${prevEnd}
+  `;
+
+  const totalCost = rows.reduce((sum, r) => sum + Number(r.cost), 0);
+  const totalRequests = rows.reduce((sum, r) => sum + Number(r.requests), 0);
+  const prevCost = prevRows[0] ? Number(prevRows[0].cost) : 0;
+  const weekOverWeekChange =
+    prevCost > 0 ? ((totalCost - prevCost) / prevCost) * 100 : null;
+
+  return {
+    totalCost,
+    totalRequests,
+    byProvider: rows.map((r) => ({
+      provider: r.provider,
+      cost: Number(r.cost),
+      requests: Number(r.requests),
+    })),
+    weekOverWeekChange,
+    dateRange: {
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+    },
+  };
 }
 

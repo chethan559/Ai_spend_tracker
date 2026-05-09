@@ -31,7 +31,8 @@ describe('Logger Retry Queue', () => {
     logToBackend('https://api.example.com', 'key', {
       provider: 'openai',
       model: 'gpt-4',
-      tokens: 1,
+      inputTokens: 1,
+      outputTokens: 0,
       cost: 0.01,
       timestamp: new Date(),
     });
@@ -49,7 +50,8 @@ describe('Logger Retry Queue', () => {
       logToBackend('https://api.example.com', 'key', {
         provider: 'openai',
         model: 'gpt-4',
-        tokens: i,
+        inputTokens: i,
+        outputTokens: 0,
         cost: 0.01,
         timestamp: new Date(),
       });
@@ -69,7 +71,8 @@ describe('Logger Retry Queue', () => {
     logToBackend('https://api.example.com', 'key', {
       provider: 'openai',
       model: 'gpt-4',
-      tokens: 1,
+      inputTokens: 1,
+      outputTokens: 0,
       cost: 0.01,
       timestamp: new Date(),
     });
@@ -91,7 +94,8 @@ describe('Logger Retry Queue', () => {
     logToBackend('https://api.example.com', 'key', {
       provider: 'openai',
       model: 'gpt-4',
-      tokens: 1,
+      inputTokens: 1,
+      outputTokens: 0,
       cost: 0.01,
       timestamp: new Date(),
     });
@@ -107,4 +111,3 @@ describe('Logger Retry Queue', () => {
     expect(getQueueSize()).toBe(0);
   });
 });
-

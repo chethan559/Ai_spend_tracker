@@ -67,7 +67,8 @@ describe('AnthropicProvider', () => {
       expect.objectContaining({
         provider: 'anthropic',
         model: 'claude-3-sonnet-20240229',
-        tokens: 1500,
+        inputTokens: 1000,
+        outputTokens: 500,
         timestamp: expect.any(Date),
       }),
       expect.objectContaining({
@@ -177,4 +178,3 @@ describe('AnthropicProvider', () => {
     await expect(provider.messages(params)).rejects.toThrow('boom');
   });
 });
-

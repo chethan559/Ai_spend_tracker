@@ -65,7 +65,8 @@ describe('OpenAIProvider', () => {
       expect.objectContaining({
         provider: 'openai',
         model: 'gpt-4',
-        tokens: 1500,
+        inputTokens: 1000,
+        outputTokens: 500,
         cost: 0.06,
         timestamp: expect.any(Date),
       }),
@@ -110,4 +111,3 @@ describe('OpenAIProvider', () => {
     await expect(provider.chat(params)).rejects.toThrow('boom');
   });
 });
-

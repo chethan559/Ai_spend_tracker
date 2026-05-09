@@ -4,7 +4,9 @@ import { normalizeEndpoint } from './url';
 export interface LogData {
   provider: string;
   model: string;
-  tokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs?: number;
   cost: number;
   metadata?: object;
   timestamp: Date;
@@ -24,9 +26,6 @@ const MAX_RETRIES = 3;
 let isProcessing = false;
 let intervalId: NodeJS.Timeout | null = null;
 
-/**
- * Send a log entry to the backend API.
- */
 function sendLog(endpoint: string, apiKey: string, logData: LogData): Promise<void> {
   const baseUrl = normalizeEndpoint(endpoint);
   const url = `${baseUrl}/api/v1/log`;
@@ -40,17 +39,12 @@ function sendLog(endpoint: string, apiKey: string, logData: LogData): Promise<vo
   ).then(() => undefined);
 }
 
-/**
- * Send a log entry to the backend API in a non-blocking, fire-and-forget way.
- * Failed requests are queued and retried in the background.
- */
 export function logToBackend(
   endpoint: string,
   apiKey: string,
   logData: LogData,
   isFromQueue = false,
 ): void {
-  // Fire the request without awaiting.
   void sendLog(endpoint, apiKey, logData).catch((error) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[AI Spend Tracker] Failed to log:', message);
@@ -69,9 +63,6 @@ export function logToBackend(
   });
 }
 
-/**
- * Add a log entry to the retry queue with FIFO size enforcement.
- */
 function enqueueLog(entry: QueuedLog): void {
   logQueue.push(entry);
   if (logQueue.length > MAX_QUEUE_SIZE) {
@@ -81,9 +72,6 @@ function enqueueLog(entry: QueuedLog): void {
   startQueueProcessor();
 }
 
-/**
- * Process queued logs in the background, retrying failures up to MAX_RETRIES.
- */
 async function processQueue(): Promise<void> {
   if (isProcessing || logQueue.length === 0) {
     return;
@@ -107,9 +95,6 @@ async function processQueue(): Promise<void> {
   isProcessing = false;
 }
 
-/**
- * Start the background queue processor if not already running.
- */
 function startQueueProcessor(): void {
   if (intervalId) {
     return;
@@ -120,10 +105,6 @@ function startQueueProcessor(): void {
   }, 60_000);
 }
 
-/**
- * Return the current queue size (useful for tests).
- */
 export function getQueueSize(): number {
   return logQueue.length;
 }
-

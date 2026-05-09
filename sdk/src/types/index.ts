@@ -65,7 +65,9 @@ export type OpenAIWrapperOptions = ProviderWrapperOptions;
 export interface ApiLog {
   provider: AIProvider;
   model: string;
-  tokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs?: number;
   cost: number;
   metadata?: LogMetadata;
   timestamp: Date;

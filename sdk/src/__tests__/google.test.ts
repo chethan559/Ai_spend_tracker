@@ -60,7 +60,8 @@ describe('GoogleProvider', () => {
       expect.objectContaining({
         provider: 'google',
         model: 'gemini-pro',
-        tokens: 1500,
+        inputTokens: 1000,
+        outputTokens: 500,
         cost: 0.00125,
         timestamp: expect.any(Date),
       }),
@@ -155,4 +156,3 @@ describe('GoogleProvider', () => {
     ).rejects.toThrow('boom');
   });
 });
-

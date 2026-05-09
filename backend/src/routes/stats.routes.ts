@@ -7,6 +7,8 @@ import {
   getModelBreakdown,
   getProjectStats,
   getProviderBreakdown,
+  getProviderDetailHandler,
+  getTotalSpendHandler,
 } from '../controllers/stats.controller';
 import { authenticateJWT } from '../middleware/auth';
 import { apiRateLimiter } from '../middleware/rateLimiter';
@@ -62,6 +64,28 @@ statsRouter.get(
   apiRateLimiter,
   authenticateJWT,
   getMetadataStats,
+);
+
+/**
+ * GET /total-spend
+ * Total spend with provider breakdown and period-over-period change.
+ */
+statsRouter.get(
+  '/total-spend',
+  apiRateLimiter,
+  authenticateJWT,
+  getTotalSpendHandler,
+);
+
+/**
+ * GET /by-provider-detail
+ * Per-provider breakdown with daily history, MoM comparison, top models.
+ */
+statsRouter.get(
+  '/by-provider-detail',
+  apiRateLimiter,
+  authenticateJWT,
+  getProviderDetailHandler,
 );
 
 export { statsRouter };

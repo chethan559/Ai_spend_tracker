@@ -7,7 +7,9 @@ import { logger } from '../utils/logger';
 export interface LogInputData {
   provider: string;
   model: string;
-  tokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs?: number;
   cost: number;
   metadata?: Prisma.InputJsonValue;
   timestamp?: string;
@@ -45,9 +47,6 @@ const getProjectIdFromMetadata = (
   return typeof value === 'string' ? value : undefined;
 };
 
-/**
- * Create a single API log entry.
- */
 export async function createLog(
   userId: string,
   logData: LogInputData,
@@ -60,7 +59,9 @@ export async function createLog(
         userId,
         provider: logData.provider,
         model: logData.model,
-        tokens: logData.tokens,
+        inputTokens: logData.inputTokens,
+        outputTokens: logData.outputTokens,
+        latencyMs: logData.latencyMs,
         cost: logData.cost,
         metadata: (logData.metadata ?? undefined) as Prisma.InputJsonValue,
         projectId,
@@ -78,9 +79,6 @@ export async function createLog(
   }
 }
 
-/**
- * Create multiple log entries in a single operation.
- */
 export async function createBatchLogs(
   userId: string,
   logs: LogInputData[],
@@ -90,7 +88,9 @@ export async function createBatchLogs(
       userId,
       provider: log.provider,
       model: log.model,
-      tokens: log.tokens,
+      inputTokens: log.inputTokens,
+      outputTokens: log.outputTokens,
+      latencyMs: log.latencyMs,
       cost: log.cost,
       metadata: (log.metadata ?? undefined) as Prisma.InputJsonValue,
       projectId: getProjectIdFromMetadata(log.metadata),
@@ -106,9 +106,6 @@ export async function createBatchLogs(
   }
 }
 
-/**
- * Fetch recent logs with optional filters and pagination.
- */
 export async function getRecentLogs(
   userId: string,
   options: RecentLogsOptions = {},
@@ -144,9 +141,6 @@ export async function getRecentLogs(
   }
 }
 
-/**
- * Calculate aggregate spend statistics for a user.
- */
 export async function getUserStats(
   userId: string,
   startDate?: Date,
@@ -181,4 +175,3 @@ export async function getUserStats(
     throw error;
   }
 }
-

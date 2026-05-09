@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-/**
- * Signup validation schema.
- */
 export const signupSchema = z.object({
   email: z
     .string({
@@ -21,9 +18,6 @@ export const signupSchema = z.object({
     .max(100, 'Password must be at most 100 characters'),
 });
 
-/**
- * Login validation schema.
- */
 export const loginSchema = z.object({
   email: z
     .string({
@@ -41,13 +35,12 @@ export const loginSchema = z.object({
     .min(1, 'Password is required'),
 });
 
-/**
- * Log ingestion schema for a single provider event.
- */
 export const logSchema = z.object({
   provider: z.enum(['openai', 'anthropic', 'google', 'cohere', 'replicate']),
   model: z.string().min(1, 'Model is required'),
-  tokens: z.number().int().min(0, 'Tokens must be a non-negative integer'),
+  inputTokens: z.number().int().min(0, 'inputTokens must be a non-negative integer'),
+  outputTokens: z.number().int().min(0, 'outputTokens must be a non-negative integer'),
+  latencyMs: z.number().int().min(0).optional(),
   cost: z.number().min(0, 'Cost must be a non-negative number'),
   metadata: z.record(z.unknown()).optional(),
   timestamp: z
@@ -57,17 +50,11 @@ export const logSchema = z.object({
     .default(() => new Date().toISOString()),
 });
 
-/**
- * Batch schema for multiple log events.
- */
 export const batchLogSchema = z
   .array(logSchema)
   .min(1, 'At least one log is required')
   .max(100, 'Batch size must be 100 or fewer');
 
-/**
- * Query schema for stats endpoints.
- */
 const dateStringSchema = z
   .string()
   .refine((value) => !Number.isNaN(Date.parse(value)), {
@@ -97,9 +84,6 @@ export type ValidationResult<T> =
       errors: Record<string, string>;
     };
 
-/**
- * Validate data against a Zod schema and return formatted errors.
- */
 export function validateRequest<T>(
   schema: z.ZodSchema<T>,
   data: unknown,
@@ -117,4 +101,3 @@ export function validateRequest<T>(
 
   return { success: false, errors };
 }
-

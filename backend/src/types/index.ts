@@ -15,7 +15,9 @@ export interface ApiLog {
   userId: string;
   provider: string;
   model: string;
-  tokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs?: number;
   cost: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata?: any;
@@ -38,4 +40,3 @@ declare global {
     }
   }
 }
-

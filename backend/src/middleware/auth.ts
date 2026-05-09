@@ -75,11 +75,47 @@ export async function authenticateApiKey(
 }
 
 /**
+ * Authenticate using JWT or API key — requires one to succeed, else 401.
+ */
+export async function authenticateAny(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+
+    if (!token) {
+      res.status(401).json({ error: 'No token provided' });
+      return;
+    }
+
+    const decoded = verifyJWT(token);
+    if (decoded) {
+      req.user = { id: decoded.userId, email: decoded.email };
+      return next();
+    }
+
+    const user = await findUserByApiKey(token);
+    if (user) {
+      req.user = { id: user.id, email: user.email, apiKey: user.apiKey };
+      return next();
+    }
+
+    res.status(401).json({ error: 'Invalid token or API key' });
+  } catch (error) {
+    logger.error('Authentication failed', error as Error);
+    res.status(401).json({ error: 'Authentication failed' });
+  }
+}
+
+/**
  * Optionally authenticate using JWT or API key, otherwise continue unauthenticated.
  */
 export async function optionalAuth(
   req: AuthenticatedRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {

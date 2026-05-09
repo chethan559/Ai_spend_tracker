@@ -7,6 +7,8 @@ import {
   getModelBreakdown as fetchModelBreakdown,
   getProjectStats as fetchProjectStats,
   getProviderBreakdown as fetchProviderBreakdown,
+  getProviderDetail as fetchProviderDetail,
+  getTotalSpend as fetchTotalSpend,
 } from '../services/stats.service';
 import { logger } from '../utils/logger';
 
@@ -162,6 +164,55 @@ export async function getProjectStats(
 }
 
 /**
+ * Get per-provider breakdown with daily history and MoM comparison.
+ */
+export async function getProviderDetailHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const userId = (req as { user?: { id: string } }).user?.id;
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const providers = await fetchProviderDetail(userId);
+    res.status(200).json({ providers });
+  } catch (error) {
+    logger.error('Get provider detail failed', error as Error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * Get total spend with provider breakdown and period-over-period change.
+ */
+export async function getTotalSpendHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const userId = (req as { user?: { id: string } }).user?.id;
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const startDate = parseDate(req.query.startDate as string | undefined)
+    ?? startOfMonth(new Date());
+  const endDate = parseDate(req.query.endDate as string | undefined)
+    ?? endOfMonth(new Date());
+
+  try {
+    const result = await fetchTotalSpend(userId, startDate, endDate);
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error('Get total spend failed', error as Error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
  * Get spend grouped by a metadata field value.
  */
 export async function getMetadataStats(
@@ -174,9 +225,9 @@ export async function getMetadataStats(
     return;
   }
 
-  const key = req.query.key ? String(req.query.key) : '';
+  const key = String(req.query.field ?? req.query.key ?? '');
   if (!key) {
-    res.status(400).json({ error: 'key is required' });
+    res.status(400).json({ error: 'field is required' });
     return;
   }
 

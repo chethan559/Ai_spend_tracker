@@ -54,16 +54,18 @@ describe('Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 1,
             timestamp: new Date(),
           },
           {
             userId,
             provider: 'anthropic',
-            model: 'claude-3-sonnet',
-            tokens: 100,
+            model: 'claude-3-sonnet-20240229',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 3,
             timestamp: new Date(),
           },
@@ -84,16 +86,18 @@ describe('Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 1,
             timestamp: new Date(),
           },
           {
             userId,
             provider: 'anthropic',
-            model: 'claude-3-sonnet',
-            tokens: 100,
+            model: 'claude-3-sonnet-20240229',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 3,
             timestamp: new Date(),
           },
@@ -116,16 +120,18 @@ describe('Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 1,
             timestamp: new Date(),
           },
           {
             userId,
             provider: 'anthropic',
-            model: 'claude-3-sonnet',
-            tokens: 100,
+            model: 'claude-3-sonnet-20240229',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 3,
             timestamp: new Date(),
           },
@@ -140,21 +146,24 @@ describe('Stats API', () => {
     });
 
     it('should filter by date range', async () => {
+      const filterDate = subDays(new Date(), 20).toISOString().split('T')[0];
       await prisma.apiLog.createMany({
         data: [
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 1,
             timestamp: subDays(new Date(), 40),
           },
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 2,
             timestamp: new Date(),
           },
@@ -162,7 +171,7 @@ describe('Stats API', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/stats/by-provider?startDate=2026-01-01')
+        .get(`/api/v1/stats/by-provider?startDate=${filterDate}`)
         .set('Authorization', `Bearer ${jwtToken}`);
 
       expect(response.body.totalSpend).toBeCloseTo(2);
@@ -176,8 +185,9 @@ describe('Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 1,
             timestamp: new Date(),
           },
@@ -185,7 +195,8 @@ describe('Stats API', () => {
             userId,
             provider: 'openai',
             model: 'gpt-3.5-turbo',
-            tokens: 100,
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 2,
             timestamp: new Date(),
           },
@@ -205,8 +216,9 @@ describe('Stats API', () => {
         data: {
           userId,
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 100,
+          model: 'gpt-4o',
+          inputTokens: 80,
+          outputTokens: 20,
           cost: 1,
           timestamp: new Date(),
         },
@@ -225,16 +237,18 @@ describe('Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 75,
+            outputTokens: 25,
             cost: 1,
             timestamp: new Date(),
           },
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 200,
+            model: 'gpt-4o',
+            inputTokens: 150,
+            outputTokens: 50,
             cost: 2,
             timestamp: new Date(),
           },
@@ -245,7 +259,9 @@ describe('Stats API', () => {
         .get('/api/v1/stats/by-model')
         .set('Authorization', `Bearer ${jwtToken}`);
 
-      expect(response.body.models[0].tokens).toBe(300);
+      expect(response.body.models[0].totalTokens).toBe(300);
+      expect(response.body.models[0].inputTokens).toBe(225);
+      expect(response.body.models[0].outputTokens).toBe(75);
     });
   });
 
@@ -256,8 +272,9 @@ describe('Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 1,
             metadata: { feature: 'chatbot' },
             timestamp: new Date(),
@@ -265,8 +282,9 @@ describe('Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 2,
             metadata: { feature: 'summarizer' },
             timestamp: new Date(),
@@ -287,8 +305,9 @@ describe('Stats API', () => {
         data: {
           userId,
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 100,
+          model: 'gpt-4o',
+          inputTokens: 80,
+          outputTokens: 20,
           cost: 1,
           metadata: { user: { id: 'nested-user' } },
           timestamp: new Date(),
@@ -312,4 +331,3 @@ describe('Stats API', () => {
     });
   });
 });
-

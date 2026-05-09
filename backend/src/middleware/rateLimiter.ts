@@ -74,3 +74,57 @@ export const authRateLimiter = createLimiter(
     legacyHeaders: false,
   }),
 );
+
+// ---------------------------------------------------------------------------
+// App-level limiters (active in all envs except NODE_ENV === 'test')
+// ---------------------------------------------------------------------------
+
+/**
+ * SDK single-log ingestion: 1000 requests per hour per API key.
+ */
+export const logIngestionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 1000,
+  keyGenerator: (req: Request): string =>
+    (req.headers['x-api-key'] as string) || req.ip || 'unknown',
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    message: 'Rate limit exceeded. Max 1000 log requests per hour.',
+    retryAfter: 'See Retry-After header',
+  },
+  skip: (req) => process.env.NODE_ENV === 'test',
+});
+
+/**
+ * SDK batch ingestion: 100 batches per hour per API key (= up to 10,000 events/hr).
+ */
+export const batchLogLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 100,
+  keyGenerator: (req: Request): string =>
+    (req.headers['x-api-key'] as string) || req.ip || 'unknown',
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    message: 'Batch rate limit exceeded. Max 100 batch requests per hour.',
+  },
+  skip: (req) => process.env.NODE_ENV === 'test',
+});
+
+/**
+ * Auth routes: 20 attempts per 15 minutes per IP.
+ */
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    message: 'Too many auth attempts. Try again in 15 minutes.',
+  },
+  skip: (req) => process.env.NODE_ENV === 'test',
+});

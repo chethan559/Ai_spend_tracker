@@ -55,9 +55,10 @@ describe('Logs and Stats API', () => {
         .set('Authorization', `Bearer ${apiKey}`)
         .send({
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 1500,
-          cost: 0.045,
+          model: 'gpt-4o',
+          inputTokens: 1000,
+          outputTokens: 500,
+          cost: 0.0125,
           metadata: { feature: 'chatbot' },
         });
 
@@ -70,9 +71,10 @@ describe('Logs and Stats API', () => {
         .post('/api/v1/log')
         .send({
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 1500,
-          cost: 0.045,
+          model: 'gpt-4o',
+          inputTokens: 1000,
+          outputTokens: 500,
+          cost: 0.0125,
         });
 
       expect(response.status).toBe(401);
@@ -84,9 +86,10 @@ describe('Logs and Stats API', () => {
         .set('Authorization', 'Bearer invalid')
         .send({
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 1500,
-          cost: 0.045,
+          model: 'gpt-4o',
+          inputTokens: 1000,
+          outputTokens: 500,
+          cost: 0.0125,
         });
 
       expect(response.status).toBe(401);
@@ -97,8 +100,8 @@ describe('Logs and Stats API', () => {
         .post('/api/v1/log')
         .set('Authorization', `Bearer ${apiKey}`)
         .send({
-          model: 'gpt-4',
-          tokens: 1500,
+          model: 'gpt-4o',
+          inputTokens: 1000,
         });
 
       expect(response.status).toBe(400);
@@ -110,9 +113,10 @@ describe('Logs and Stats API', () => {
         .set('Authorization', `Bearer ${apiKey}`)
         .send({
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 1500,
-          cost: 0.045,
+          model: 'gpt-4o',
+          inputTokens: 1000,
+          outputTokens: 500,
+          cost: 0.0125,
           metadata: { userId: 'user123', feature: 'chatbot' },
         });
 
@@ -131,13 +135,15 @@ describe('Logs and Stats API', () => {
           {
             provider: 'openai',
             model: 'gpt-3.5-turbo',
-            tokens: 500,
-            cost: 0.001,
+            inputTokens: 400,
+            outputTokens: 100,
+            cost: 0.00035,
           },
           {
             provider: 'anthropic',
-            model: 'claude-3-sonnet',
-            tokens: 2000,
+            model: 'claude-3-sonnet-20240229',
+            inputTokens: 1500,
+            outputTokens: 500,
             cost: 0.012,
           },
         ]);
@@ -158,8 +164,9 @@ describe('Logs and Stats API', () => {
     it('should enforce max batch size (100)', async () => {
       const payload = Array.from({ length: 101 }, () => ({
         provider: 'openai',
-        model: 'gpt-4',
-        tokens: 1,
+        model: 'gpt-4o',
+        inputTokens: 1,
+        outputTokens: 1,
         cost: 0.001,
       }));
 
@@ -178,8 +185,9 @@ describe('Logs and Stats API', () => {
         data: {
           userId,
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 100,
+          model: 'gpt-4o',
+          inputTokens: 80,
+          outputTokens: 20,
           cost: 0.01,
           timestamp: new Date(),
         },
@@ -198,8 +206,9 @@ describe('Logs and Stats API', () => {
         data: Array.from({ length: 5 }, () => ({
           userId,
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 100,
+          model: 'gpt-4o',
+          inputTokens: 80,
+          outputTokens: 20,
           cost: 0.01,
           timestamp: new Date(),
         })),
@@ -219,16 +228,18 @@ describe('Logs and Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             timestamp: new Date(),
           },
           {
             userId,
             provider: 'anthropic',
-            model: 'claude-3-sonnet',
-            tokens: 100,
+            model: 'claude-3-sonnet-20240229',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             timestamp: new Date(),
           },
@@ -253,8 +264,9 @@ describe('Logs and Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             projectId: project.id,
             timestamp: new Date(),
@@ -262,8 +274,9 @@ describe('Logs and Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             timestamp: new Date(),
           },
@@ -288,16 +301,18 @@ describe('Logs and Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             timestamp: older,
           },
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             timestamp: newer,
           },
@@ -321,16 +336,18 @@ describe('Logs and Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             timestamp: new Date(),
           },
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.02,
             timestamp: new Date(),
           },
@@ -352,16 +369,18 @@ describe('Logs and Stats API', () => {
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             timestamp: new Date(),
           },
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.03,
             timestamp: new Date(),
           },
@@ -378,21 +397,24 @@ describe('Logs and Stats API', () => {
 
     it('should filter by date range', async () => {
       const past = subDays(new Date(), 40);
+      const filterDate = subDays(new Date(), 20).toISOString().split('T')[0];
       await prisma.apiLog.createMany({
         data: [
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.01,
             timestamp: past,
           },
           {
             userId,
             provider: 'openai',
-            model: 'gpt-4',
-            tokens: 100,
+            model: 'gpt-4o',
+            inputTokens: 80,
+            outputTokens: 20,
             cost: 0.02,
             timestamp: new Date(),
           },
@@ -400,7 +422,7 @@ describe('Logs and Stats API', () => {
       });
 
       const response = await request(app)
-        .get('/api/v1/stats/overview?startDate=2026-01-01')
+        .get(`/api/v1/stats/overview?startDate=${filterDate}`)
         .set('Authorization', `Bearer ${jwtToken}`);
 
       expect(response.status).toBe(200);
@@ -424,8 +446,9 @@ describe('Logs and Stats API', () => {
         data: {
           userId,
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 100,
+          model: 'gpt-4o',
+          inputTokens: 80,
+          outputTokens: 20,
           cost: 0.01,
           timestamp: new Date(),
         },
@@ -444,8 +467,9 @@ describe('Logs and Stats API', () => {
         data: {
           userId,
           provider: 'openai',
-          model: 'gpt-4',
-          tokens: 100,
+          model: 'gpt-4o',
+          inputTokens: 80,
+          outputTokens: 20,
           cost: 0.01,
           timestamp: new Date(),
         },
@@ -470,4 +494,3 @@ describe('Logs and Stats API', () => {
     });
   });
 });
-
