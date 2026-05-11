@@ -265,6 +265,72 @@ describe('Stats API', () => {
     });
   });
 
+  describe('Timezone handling in daily stats', () => {
+    beforeEach(async () => {
+      // 2026-05-11T14:00:00Z = 2026-05-12T00:00:00 AEST (UTC+10) — crosses midnight
+      await prisma.apiLog.create({
+        data: {
+          userId,
+          provider: 'openai',
+          model: 'gpt-4o',
+          inputTokens: 100,
+          outputTokens: 50,
+          cost: 0.00125,
+          latencyMs: 500,
+          timestamp: new Date('2026-05-11T14:00:00Z'),
+          metadata: {},
+        },
+      });
+    });
+
+    it('should bucket log into May 11 for UTC user', async () => {
+      const res = await request(app)
+        .get('/api/v1/stats/daily')
+        .set('Authorization', `Bearer ${jwtToken}`)
+        .query({
+          startDate: '2026-05-11',
+          endDate: '2026-05-12',
+          timezone: 'UTC',
+        });
+
+      expect(res.status).toBe(200);
+      const may11 = res.body.stats.find((d: { date: string }) => d.date === '2026-05-11');
+      expect(may11?.requests).toBe(1);
+    });
+
+    it('should bucket log into May 12 for AEST user', async () => {
+      const res = await request(app)
+        .get('/api/v1/stats/daily')
+        .set('Authorization', `Bearer ${jwtToken}`)
+        .query({
+          startDate: '2026-05-11',
+          endDate: '2026-05-13',
+          timezone: 'Australia/Melbourne',
+        });
+
+      expect(res.status).toBe(200);
+      const may12 = res.body.stats.find((d: { date: string }) => d.date === '2026-05-12');
+      expect(may12?.requests).toBe(1);
+    });
+
+    it('should reject invalid timezone', async () => {
+      const res = await request(app)
+        .get('/api/v1/stats/daily')
+        .set('Authorization', `Bearer ${jwtToken}`)
+        .query({ timezone: 'Not/ATimezone' });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should default to UTC when no timezone provided', async () => {
+      const res = await request(app)
+        .get('/api/v1/stats/daily')
+        .set('Authorization', `Bearer ${jwtToken}`);
+
+      expect(res.status).toBe(200);
+    });
+  });
+
   describe('GET /api/v1/stats/by-metadata', () => {
     it('should filter by metadata key', async () => {
       await prisma.apiLog.createMany({

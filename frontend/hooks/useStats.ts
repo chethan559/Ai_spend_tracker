@@ -28,6 +28,8 @@ interface UseQueryResult<T> {
 
 const toIsoDate = (date?: Date) => (date ? formatISO(date, { representation: 'date' }) : undefined);
 
+const browserTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 /**
  * Fetch overview stats for an optional date range.
  */
@@ -37,10 +39,11 @@ export function useOverviewStats(
 ): UseQueryResult<StatsOverview> {
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
+  const timezone = browserTimezone();
   const enabled = Boolean(!startDate || !endDate || (start && end));
 
   const query = useQuery({
-    queryKey: ['stats', 'overview', start, end],
+    queryKey: ['stats', 'overview', start, end, timezone],
     queryFn: () => getOverview(start, end),
     enabled,
     refetchInterval: 30_000,
@@ -55,12 +58,14 @@ export function useOverviewStats(
 }
 
 /**
- * Fetch daily stats for the last N days.
+ * Fetch daily stats for the last N days, bucketed in the browser's timezone.
  */
 export function useDailyStats(days = 30): UseQueryResult<DailyStat[]> {
+  const timezone = browserTimezone();
+
   const query = useQuery({
-    queryKey: ['stats', 'daily', days],
-    queryFn: () => getDailyStats(days),
+    queryKey: ['stats', 'daily', days, timezone],
+    queryFn: () => getDailyStats(days, timezone),
     refetchInterval: 30_000,
   });
 
@@ -80,10 +85,11 @@ export function useProviderBreakdown(
 ): UseQueryResult<ProviderStat[]> {
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
+  const timezone = browserTimezone();
   const enabled = Boolean(!startDate || !endDate || (start && end));
 
   const query = useQuery({
-    queryKey: ['stats', 'providers', start, end],
+    queryKey: ['stats', 'providers', start, end, timezone],
     queryFn: () => getProviderBreakdown(start, end),
     enabled,
   });
@@ -126,10 +132,11 @@ export function useTotalSpend(
 ): UseQueryResult<TotalSpendResult> {
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
+  const timezone = browserTimezone();
   const enabled = Boolean(!startDate || !endDate || (start && end));
 
   const query = useQuery({
-    queryKey: ['stats', 'total-spend', start, end],
+    queryKey: ['stats', 'total-spend', start, end, timezone],
     queryFn: () => getTotalSpend(start, end),
     enabled,
     refetchInterval: 30_000,
@@ -171,10 +178,11 @@ export function useModelBreakdown(
 ): UseQueryResult<ModelStat[]> {
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
+  const timezone = browserTimezone();
   const enabled = Boolean(!startDate || !endDate || (start && end));
 
   const query = useQuery({
-    queryKey: ['stats', 'models', start, end],
+    queryKey: ['stats', 'models', start, end, timezone],
     queryFn: () => getModelBreakdown(start, end),
     enabled,
   });

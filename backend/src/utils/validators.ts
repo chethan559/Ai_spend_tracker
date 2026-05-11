@@ -43,6 +43,7 @@ export const logSchema = z.object({
   latencyMs: z.number().int().min(0).optional(),
   cost: z.number().min(0, 'Cost must be a non-negative number'),
   metadata: z.record(z.unknown()).optional(),
+  projectId: z.string().uuid().optional(),
   timestamp: z
     .string()
     .datetime()
@@ -66,6 +67,20 @@ export const statsQuerySchema = z.object({
   endDate: dateStringSchema.optional(),
   provider: z.string().optional(),
   projectId: z.string().uuid().optional(),
+  timezone: z
+    .string()
+    .default('UTC')
+    .refine(
+      (tz) => {
+        try {
+          Intl.DateTimeFormat(undefined, { timeZone: tz });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Invalid timezone' },
+    ),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

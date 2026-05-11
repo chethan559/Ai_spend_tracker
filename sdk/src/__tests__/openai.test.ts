@@ -110,4 +110,114 @@ describe('OpenAIProvider', () => {
 
     await expect(provider.chat(params)).rejects.toThrow('boom');
   });
+
+  describe('OpenAI streaming', () => {
+    it('should return an async iterable for stream: true', async () => {
+      const mockChunks = [
+        { choices: [{ delta: { content: 'Hello' } }], usage: null },
+        { choices: [{ delta: { content: ' world' } }], usage: null },
+        {
+          choices: [{ delta: { content: '' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 100, completion_tokens: 50 },
+        },
+      ];
+
+      const mockStream = async function* () {
+        for (const chunk of mockChunks) yield chunk;
+      };
+      mockChatCreate.mockResolvedValue(mockStream());
+
+      const provider = new OpenAIProvider(openaiApiKey, trackerApiKey, endpoint);
+      const result = await provider.chat({
+        model: 'gpt-4o',
+        messages: [{ role: 'user' as const, content: 'Hi' }],
+        stream: true,
+      } as ChatParams);
+
+      expect(Symbol.asyncIterator in (result as any)).toBe(true);
+
+      const chunks: unknown[] = [];
+      for await (const chunk of result as any) {
+        chunks.push(chunk);
+      }
+      expect(chunks).toHaveLength(3);
+    });
+
+    it('should log cost after stream completes', async () => {
+      const mockChunks = [
+        { choices: [{ delta: { content: 'Hi' } }], usage: null },
+        {
+          choices: [{ delta: {}, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 200, completion_tokens: 80 },
+        },
+      ];
+
+      const mockStream = async function* () {
+        for (const chunk of mockChunks) yield chunk;
+      };
+      mockChatCreate.mockResolvedValue(mockStream());
+
+      const provider = new OpenAIProvider(openaiApiKey, trackerApiKey, endpoint);
+      const result = await provider.chat(
+        {
+          model: 'gpt-4o',
+          messages: [{ role: 'user' as const, content: 'Hi' }],
+          stream: true,
+        } as ChatParams,
+        { metadata: { feature: 'stream-test' } },
+      );
+
+      for await (const _ of result as any) { /* consume */ }
+
+      // gpt-4o: (200 * $5 + 80 * $15) / 1_000_000 = $0.002200
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        `${endpoint}/api/v1/log`,
+        expect.objectContaining({
+          provider: 'openai',
+          model: 'gpt-4o',
+          inputTokens: 200,
+          outputTokens: 80,
+          cost: expect.closeTo(0.002200, 4),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should not log when skipLogging is true', async () => {
+      const mockStream = async function* () {
+        yield { choices: [{ delta: { content: 'Hi' } }], usage: null };
+      };
+      mockChatCreate.mockResolvedValue(mockStream());
+
+      const provider = new OpenAIProvider(openaiApiKey, trackerApiKey, endpoint);
+      const result = await provider.chat(
+        {
+          model: 'gpt-4o',
+          messages: [{ role: 'user' as const, content: 'Hi' }],
+          stream: true,
+        } as ChatParams,
+        { skipLogging: true },
+      );
+
+      for await (const _ of result as any) { /* consume */ }
+
+      expect(mockedAxios.post).not.toHaveBeenCalled();
+    });
+
+    it('should not affect non-streaming calls', async () => {
+      mockChatCreate.mockResolvedValue({
+        choices: [{ message: { content: 'Hi' } }],
+        usage: { prompt_tokens: 50, completion_tokens: 20 },
+      });
+
+      const provider = new OpenAIProvider(openaiApiKey, trackerApiKey, endpoint);
+      const result = await provider.chat({
+        model: 'gpt-4o',
+        messages: [{ role: 'user' as const, content: 'Hi' }],
+      });
+
+      expect('choices' in (result as any)).toBe(true);
+      expect(Symbol.asyncIterator in (result as any)).toBe(false);
+    });
+  });
 });

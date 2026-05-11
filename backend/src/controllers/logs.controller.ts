@@ -8,6 +8,7 @@ import {
   getRecentLogs,
   getUserStats,
 } from '../services/logs.service';
+import { checkBudgetThresholds } from '../services/alert.service';
 import { logSchema, batchLogSchema, statsQuerySchema, validateRequest } from '../utils/validators';
 import { logger } from '../utils/logger';
 
@@ -36,6 +37,11 @@ export async function createLogHandler(
       metadata: validation.data.metadata as Prisma.InputJsonValue | undefined,
     });
     res.status(201).json({ message: 'Log created', log });
+
+    // Non-blocking — must not delay or fail the response.
+    checkBudgetThresholds(userId).catch((err: Error) =>
+      logger.error('Budget threshold check failed', err),
+    );
   } catch (error) {
     logger.error('Create log failed', error as Error);
     res.status(500).json({ error: 'Internal server error' });
@@ -68,6 +74,11 @@ export async function createBatchLogsHandler(
     }));
     const count = await createBatchLogs(userId, logs);
     res.status(201).json({ message: 'Logs created', count });
+
+    // Non-blocking — must not delay or fail the response.
+    checkBudgetThresholds(userId).catch((err: Error) =>
+      logger.error('Budget threshold check failed', err),
+    );
   } catch (error) {
     logger.error('Create batch logs failed', error as Error);
     res.status(500).json({ error: 'Internal server error' });

@@ -21,7 +21,7 @@ function parseDate(value?: string): Date | undefined {
 }
 
 /**
- * Get spend grouped by day for the last N days.
+ * Get spend grouped by day, bucketed in the requested timezone.
  */
 export async function getDailyStats(
   req: Request,
@@ -33,24 +33,38 @@ export async function getDailyStats(
     return;
   }
 
+  const timezoneParam = (req.query.timezone as string | undefined) ?? 'UTC';
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: timezoneParam });
+  } catch {
+    res.status(400).json({ error: 'Invalid timezone' });
+    return;
+  }
+
   const days = req.query.days ? Number(req.query.days) : 30;
   if (!Number.isFinite(days) || days <= 0) {
     res.status(400).json({ error: 'days must be a positive number' });
     return;
   }
 
+  const startDate = parseDate(req.query.startDate as string | undefined);
+  const endDate = parseDate(req.query.endDate as string | undefined);
+
   try {
-    const stats = await fetchDailyStats(userId, days);
-    const endDate = new Date();
-    const startDate = new Date(endDate);
-    startDate.setDate(endDate.getDate() - (days - 1));
+    const stats = await fetchDailyStats(userId, {
+      days,
+      startDate,
+      endDate,
+      timezone: timezoneParam,
+    });
 
     res.status(200).json({
       stats,
       period: {
         days,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        startDate: (startDate ?? new Date()).toISOString(),
+        endDate: (endDate ?? new Date()).toISOString(),
+        timezone: timezoneParam,
       },
     });
   } catch (error) {

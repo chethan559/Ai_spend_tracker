@@ -120,6 +120,7 @@ export interface DailyStatsResponse {
     days: number;
     startDate: string;
     endDate: string;
+    timezone: string;
   };
 }
 
@@ -213,14 +214,14 @@ export async function getOverview(
 }
 
 /**
- * Get daily stats for the last N days.
+ * Get daily stats for the last N days, bucketed in the given timezone.
  */
-export async function getDailyStats(days: number): Promise<DailyStat[]> {
+export async function getDailyStats(days: number, timezone?: string): Promise<DailyStat[]> {
   try {
     const response = await api.get<DailyStatsResponse>('/api/v1/stats/daily', {
-      params: { days },
+      params: { days, timezone },
     });
-    return response.stats;
+    return response.data;
   } catch (error) {
     throw error;
   }

@@ -60,27 +60,38 @@ export interface TotalSpendResult {
 }
 
 /**
- * Get spend grouped by day for the last N days.
+ * Get spend grouped by day, bucketed in the given timezone.
  */
 export async function getDailyStats(
   userId: string,
-  days = 30,
+  options: { days?: number; startDate?: Date; endDate?: Date; timezone?: string } = {},
 ): Promise<DailyStat[]> {
-  const endDate = startOfDay(new Date());
-  const startDate = startOfDay(subDays(endDate, days - 1));
+  const timezone = options.timezone ?? 'UTC';
+
+  let startDate: Date;
+  let endDate: Date;
+
+  if (options.startDate && options.endDate) {
+    startDate = options.startDate;
+    endDate = options.endDate;
+  } else {
+    const days = options.days ?? 30;
+    endDate = startOfDay(new Date());
+    startDate = startOfDay(subDays(endDate, days - 1));
+  }
 
   const rows = await prisma.$queryRaw<
     { date: Date; spend: number; requests: bigint }[]
   >`
-    SELECT DATE("timestamp") AS date,
+    SELECT DATE(("timestamp" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}::text) AS date,
            COALESCE(SUM(cost), 0) AS spend,
            COUNT(*) AS requests
     FROM "ApiLog"
     WHERE "userId" = ${userId}
       AND "timestamp" >= ${startDate}
       AND "timestamp" <= ${endDate}
-    GROUP BY DATE("timestamp")
-    ORDER BY DATE("timestamp") ASC
+    GROUP BY 1
+    ORDER BY 1 ASC
   `;
 
   const mapped = rows.map((row) => ({

@@ -3,8 +3,10 @@ import axios from 'axios';
 import GoogleProvider from '../providers/GoogleProvider';
 
 const mockGenerateContent = jest.fn();
+const mockGenerateContentStream = jest.fn();
 const mockGetGenerativeModel = jest.fn().mockReturnValue({
   generateContent: mockGenerateContent,
+  generateContentStream: mockGenerateContentStream,
 });
 
 jest.mock('@google/generative-ai', () => ({
@@ -154,5 +156,82 @@ describe('GoogleProvider', () => {
     await expect(
       provider.generateContent('gemini-pro', params),
     ).rejects.toThrow('boom');
+  });
+
+  describe('Google streaming', () => {
+    it('should return an async iterable for stream: true', async () => {
+      const mockChunks = [
+        { usageMetadata: { promptTokenCount: 0, candidatesTokenCount: 0 } },
+        { usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 30 } },
+        { usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50 } },
+      ];
+
+      const mockStream = async function* () {
+        for (const chunk of mockChunks) yield chunk;
+      };
+      mockGenerateContentStream.mockResolvedValue(mockStream());
+
+      const provider = new GoogleProvider(googleApiKey, trackerApiKey, endpoint);
+      const result = await provider.generateContent('gemini-pro', {
+        stream: true,
+        contents: [{ role: 'user', parts: [{ text: 'Hi' }] }],
+      } as GenerateParams);
+
+      expect(Symbol.asyncIterator in (result as any)).toBe(true);
+
+      const chunks: unknown[] = [];
+      for await (const chunk of result as any) {
+        chunks.push(chunk);
+      }
+      expect(chunks).toHaveLength(3);
+    });
+
+    it('should log cost after stream completes', async () => {
+      const mockStream = async function* () {
+        yield { usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 20 } };
+        yield { usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50 } };
+      };
+      mockGenerateContentStream.mockResolvedValue(mockStream());
+
+      const provider = new GoogleProvider(googleApiKey, trackerApiKey, endpoint);
+      const result = await provider.generateContent(
+        'gemini-pro',
+        { stream: true, contents: [{ role: 'user', parts: [{ text: 'Hi' }] }] } as GenerateParams,
+        { metadata: { feature: 'stream-test' } },
+      );
+
+      for await (const _ of result as any) { /* consume */ }
+
+      // gemini-pro: (100 * $0.50 + 50 * $1.50) / 1_000_000 = $0.000125
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        `${endpoint}/api/v1/log`,
+        expect.objectContaining({
+          provider: 'google',
+          model: 'gemini-pro',
+          inputTokens: 100,
+          outputTokens: 50,
+          cost: expect.closeTo(0.000125, 6),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should not log when skipLogging is true', async () => {
+      const mockStream = async function* () {
+        yield { usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 } };
+      };
+      mockGenerateContentStream.mockResolvedValue(mockStream());
+
+      const provider = new GoogleProvider(googleApiKey, trackerApiKey, endpoint);
+      const result = await provider.generateContent(
+        'gemini-pro',
+        { stream: true, contents: [{ role: 'user', parts: [{ text: 'Hi' }] }] } as GenerateParams,
+        { skipLogging: true },
+      );
+
+      for await (const _ of result as any) { /* consume */ }
+
+      expect(mockedAxios.post).not.toHaveBeenCalled();
+    });
   });
 });

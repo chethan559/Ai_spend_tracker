@@ -12,6 +12,7 @@ export interface LogInputData {
   latencyMs?: number;
   cost: number;
   metadata?: Prisma.InputJsonValue;
+  projectId?: string;
   timestamp?: string;
 }
 
@@ -52,7 +53,7 @@ export async function createLog(
   logData: LogInputData,
 ) {
   try {
-    const projectId = getProjectIdFromMetadata(logData.metadata);
+    const projectId = logData.projectId ?? getProjectIdFromMetadata(logData.metadata);
 
     const createdLog = await prisma.apiLog.create({
       data: {
@@ -93,7 +94,7 @@ export async function createBatchLogs(
       latencyMs: log.latencyMs,
       cost: log.cost,
       metadata: (log.metadata ?? undefined) as Prisma.InputJsonValue,
-      projectId: getProjectIdFromMetadata(log.metadata),
+      projectId: log.projectId ?? getProjectIdFromMetadata(log.metadata),
       timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
     }));
 

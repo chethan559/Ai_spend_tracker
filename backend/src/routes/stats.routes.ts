@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Request, Response } from 'express';
 
 import { getOverviewHandler } from '../controllers/logs.controller';
 import {
@@ -11,82 +12,35 @@ import {
   getTotalSpendHandler,
 } from '../controllers/stats.controller';
 import { authenticateJWT } from '../middleware/auth';
-import { apiRateLimiter } from '../middleware/rateLimiter';
+import { getQuotaStatus } from '../services/quota.service';
+import { logger } from '../utils/logger';
 
 const statsRouter = Router();
 
-/**
- * GET /overview
- * Aggregate totals for spend and requests.
- */
-statsRouter.get('/overview', apiRateLimiter, authenticateJWT, getOverviewHandler);
+statsRouter.get('/overview', authenticateJWT, getOverviewHandler);
+statsRouter.get('/daily', authenticateJWT, getDailyStats);
+statsRouter.get('/by-provider', authenticateJWT, getProviderBreakdown);
+statsRouter.get('/by-model', authenticateJWT, getModelBreakdown);
+statsRouter.get('/by-project', authenticateJWT, getProjectStats);
+statsRouter.get('/by-metadata', authenticateJWT, getMetadataStats);
+statsRouter.get('/total-spend', authenticateJWT, getTotalSpendHandler);
+statsRouter.get('/by-provider-detail', authenticateJWT, getProviderDetailHandler);
 
-/**
- * GET /daily
- * Daily spend and request counts.
- */
-statsRouter.get('/daily', apiRateLimiter, authenticateJWT, getDailyStats);
-
-/**
- * GET /by-provider
- * Spend breakdown by AI provider.
- */
 statsRouter.get(
-  '/by-provider',
-  apiRateLimiter,
+  '/quota',
   authenticateJWT,
-  getProviderBreakdown,
-);
+  async (req: Request, res: Response) => {
+    const userId = (req as Request & { user?: { id: string } }).user?.id;
+    if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
-/**
- * GET /by-model
- * Spend breakdown by model.
- */
-statsRouter.get(
-  '/by-model',
-  apiRateLimiter,
-  authenticateJWT,
-  getModelBreakdown,
-);
-
-/**
- * GET /by-project
- * Spend breakdown by project.
- */
-statsRouter.get('/by-project', apiRateLimiter, authenticateJWT, getProjectStats);
-
-/**
- * GET /by-metadata
- * Spend breakdown by metadata field.
- */
-statsRouter.get(
-  '/by-metadata',
-  apiRateLimiter,
-  authenticateJWT,
-  getMetadataStats,
-);
-
-/**
- * GET /total-spend
- * Total spend with provider breakdown and period-over-period change.
- */
-statsRouter.get(
-  '/total-spend',
-  apiRateLimiter,
-  authenticateJWT,
-  getTotalSpendHandler,
-);
-
-/**
- * GET /by-provider-detail
- * Per-provider breakdown with daily history, MoM comparison, top models.
- */
-statsRouter.get(
-  '/by-provider-detail',
-  apiRateLimiter,
-  authenticateJWT,
-  getProviderDetailHandler,
+    try {
+      const quota = await getQuotaStatus(userId);
+      res.json({ status: 'success', data: quota });
+    } catch (error) {
+      logger.error('Failed to get quota status', error as Error);
+      res.status(500).json({ status: 'error', message: 'Failed to get quota status' });
+    }
+  },
 );
 
 export { statsRouter };
-

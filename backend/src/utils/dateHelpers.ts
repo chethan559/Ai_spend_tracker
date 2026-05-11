@@ -55,6 +55,34 @@ export function getDateRange(
 }
 
 /**
+ * Get start/end Date objects for a rolling N-day window ending "today" in the
+ * given timezone. Useful for building date-range query params from the browser.
+ */
+export function getDateRangeInTimezone(
+  days: number,
+  timezone = 'UTC',
+): { start: Date; end: Date } {
+  const now = new Date();
+
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const todayInTz = formatter.format(now); // e.g. "2026-05-11"
+
+  const endDate = new Date(`${todayInTz}T23:59:59`);
+
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - days);
+  startDate.setHours(0, 0, 0, 0);
+
+  return { start: startDate, end: endDate };
+}
+
+/**
  * Fill missing dates in sparse datasets for charting.
  * Example: fillMissingDates(rows, start, end, 'date', ['spend', 'requests']).
  */

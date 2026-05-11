@@ -1,7 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
-import { calculateCost } from '../utils/pricing';
+import { calculateCost, isKnownModel } from '../utils/pricing';
+import { logger } from '../utils/logger';
 
 interface RawLogEvent {
+  provider?: string;
   model?: string;
   inputTokens?: number;
   outputTokens?: number;
@@ -16,7 +18,8 @@ interface RawLogEvent {
 }
 
 function recalcEvent(event: RawLogEvent): RawLogEvent {
-  const model = event.model ?? '';
+  const provider = typeof event.provider === 'string' ? event.provider : '';
+  const model = typeof event.model === 'string' ? event.model : '';
 
   const inputTokens =
     typeof event.inputTokens === 'number'
@@ -34,35 +37,23 @@ function recalcEvent(event: RawLogEvent): RawLogEvent {
         ? event.output_tokens
         : 0;
 
-  const known = [
-    'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo',
-    'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022',
-    'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307',
-    'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro',
-  ];
-
-  const isKnownModel = known.includes(model.toLowerCase());
-
-  if (!isKnownModel) {
-    return {
-      ...event,
-      metadata: { ...(event.metadata ?? {}), _cost_unverified: true },
-    };
-  }
-
-  const calculatedCost = calculateCost(model, inputTokens, outputTokens);
+  const calculatedCost = calculateCost(provider, model, inputTokens, outputTokens);
+  const estimated = !isKnownModel(provider, model);
 
   return {
     ...event,
     cost: calculatedCost,
     cost_usd: calculatedCost,
+    ...(estimated
+      ? { metadata: { ...(event.metadata ?? {}), _cost_estimated: true } }
+      : {}),
   };
 }
 
 /**
- * Recalculates cost for each event in the batch using the server-side pricing
- * table, overwriting the SDK-provided cost before the DB write.
- * Unknown models keep their SDK cost and gain metadata._cost_unverified = true.
+ * Recalculates cost for every log event using the server-side pricing table,
+ * overwriting the SDK-provided cost before the DB write.
+ * Unknown models use gpt-4o fallback pricing and receive metadata._cost_estimated = true.
  */
 export function recalculateCosts(
   req: Request,
@@ -71,10 +62,14 @@ export function recalculateCosts(
 ): void {
   if (!req.body) return next();
 
-  if (Array.isArray(req.body)) {
-    req.body = (req.body as RawLogEvent[]).map(recalcEvent);
-  } else if (typeof req.body === 'object') {
-    req.body = recalcEvent(req.body as RawLogEvent);
+  try {
+    if (Array.isArray(req.body)) {
+      req.body = (req.body as RawLogEvent[]).map(recalcEvent);
+    } else if (typeof req.body === 'object') {
+      req.body = recalcEvent(req.body as RawLogEvent);
+    }
+  } catch (error) {
+    logger.error('recalculateCosts middleware failed', error as Error);
   }
 
   next();

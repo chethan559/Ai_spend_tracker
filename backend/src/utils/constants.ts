@@ -1,12 +1,29 @@
 /**
  * Subscription plans and quotas for the API.
+ * Keys match the `plan` column value stored in the User table.
  */
 export const PLANS = {
-  FREE: { name: 'free', requestLimit: 10000, price: 0 },
-  STARTER: { name: 'starter', requestLimit: 100000, price: 29 },
-  PRO: { name: 'pro', requestLimit: 1000000, price: 99 },
-  BUSINESS: { name: 'business', requestLimit: 10000000, price: 299 },
+  free: {
+    requestLimit: 50000,      // 50K events/month
+    projectLimit: 3,          // max 3 projects
+    dataRetentionDays: 7,     // 7 days of history
+    alertsEnabled: false,     // no budget alerts
+  },
+  starter: {
+    requestLimit: 500000,     // 500K events/month
+    projectLimit: -1,         // unlimited projects
+    dataRetentionDays: 90,    // 90 days of history
+    alertsEnabled: true,
+  },
+  growth: {
+    requestLimit: -1,         // unlimited events
+    projectLimit: -1,         // unlimited projects
+    dataRetentionDays: 365,   // 1 year of history
+    alertsEnabled: true,
+  },
 } as const;
+
+export type Plan = keyof typeof PLANS;
 
 /**
  * Supported AI providers for logging and validation.

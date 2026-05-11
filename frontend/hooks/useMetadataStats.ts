@@ -14,9 +14,10 @@ const toIsoDate = (date?: Date) =>
 export function useMetadataStats(field: string, dateRange: DateRange) {
   const start = toIsoDate(dateRange.from);
   const end = toIsoDate(dateRange.to);
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const query = useQuery({
-    queryKey: ['stats', 'metadata', field, start, end],
+    queryKey: ['stats', 'metadata', field, start, end, timezone],
     queryFn: () => getMetadataStats(field, start, end),
     enabled: Boolean(field && field.trim()),
     staleTime: 10 * 60_000,

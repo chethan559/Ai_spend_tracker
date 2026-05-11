@@ -177,4 +177,92 @@ describe('AnthropicProvider', () => {
 
     await expect(provider.messages(params)).rejects.toThrow('boom');
   });
+
+  describe('Anthropic streaming', () => {
+    it('should return an async iterable for stream: true', async () => {
+      const mockEvents = [
+        { type: 'message_start', message: { usage: { input_tokens: 100, output_tokens: 0 } } },
+        { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Hello' } },
+        { type: 'message_delta', usage: { output_tokens: 50 } },
+        { type: 'message_stop' },
+      ];
+
+      const mockStream = async function* () {
+        for (const event of mockEvents) yield event;
+      };
+      mockMessagesCreate.mockResolvedValue(mockStream());
+
+      const provider = new AnthropicProvider(anthropicApiKey, trackerApiKey, endpoint);
+      const result = await provider.messages({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: 'Hi' }],
+        stream: true,
+      } as MessagesParams);
+
+      expect(Symbol.asyncIterator in (result as any)).toBe(true);
+
+      const events: unknown[] = [];
+      for await (const event of result as any) {
+        events.push(event);
+      }
+      expect(events).toHaveLength(4);
+    });
+
+    it('should log cost after stream completes', async () => {
+      const mockStream = async function* () {
+        yield { type: 'message_start', message: { usage: { input_tokens: 100, output_tokens: 0 } } };
+        yield { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Hi' } };
+        yield { type: 'message_delta', usage: { output_tokens: 50 } };
+        yield { type: 'message_stop' };
+      };
+      mockMessagesCreate.mockResolvedValue(mockStream());
+
+      const provider = new AnthropicProvider(anthropicApiKey, trackerApiKey, endpoint);
+      const result = await provider.messages({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: 'Hi' }],
+        stream: true,
+      } as MessagesParams);
+
+      for await (const _ of result as any) { /* consume */ }
+
+      // claude-3-sonnet: (100 * $3 + 50 * $15) / 1_000_000 = $0.00105
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        `${endpoint}/api/v1/log`,
+        expect.objectContaining({
+          provider: 'anthropic',
+          model: 'claude-3-sonnet-20240229',
+          inputTokens: 100,
+          outputTokens: 50,
+          cost: expect.closeTo(0.00105, 5),
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('should not log when skipLogging is true', async () => {
+      const mockStream = async function* () {
+        yield { type: 'message_start', message: { usage: { input_tokens: 10, output_tokens: 0 } } };
+        yield { type: 'message_stop' };
+      };
+      mockMessagesCreate.mockResolvedValue(mockStream());
+
+      const provider = new AnthropicProvider(anthropicApiKey, trackerApiKey, endpoint);
+      const result = await provider.messages(
+        {
+          model: 'claude-3-sonnet-20240229',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: 'Hi' }],
+          stream: true,
+        } as MessagesParams,
+        { skipLogging: true },
+      );
+
+      for await (const _ of result as any) { /* consume */ }
+
+      expect(mockedAxios.post).not.toHaveBeenCalled();
+    });
+  });
 });

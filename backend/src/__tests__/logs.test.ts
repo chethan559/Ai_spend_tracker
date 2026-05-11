@@ -329,6 +329,86 @@ describe('Logs and Stats API', () => {
     });
   });
 
+  describe('POST /api/v1/log — cost recalculation', () => {
+    it('overwrites wrong cost for a known model (single log)', async () => {
+      // gpt-4o: $5/M input + $15/M output
+      // 1000 input + 500 output = (1000*5 + 500*15) / 1_000_000 = 0.0125
+      const response = await request(app)
+        .post('/api/v1/log')
+        .set('Authorization', `Bearer ${apiKey}`)
+        .send({
+          provider: 'openai',
+          model: 'gpt-4o',
+          inputTokens: 1000,
+          outputTokens: 500,
+          cost: 0.999, // intentionally wrong
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.log.cost).toBeCloseTo(0.0125, 6);
+    });
+
+    it('uses fallback pricing and sets _cost_estimated for unknown model (single log)', async () => {
+      const response = await request(app)
+        .post('/api/v1/log')
+        .set('Authorization', `Bearer ${apiKey}`)
+        .send({
+          provider: 'openai',
+          model: 'gpt-unknown-future',
+          inputTokens: 500,
+          outputTokens: 200,
+          cost: 0.001,
+        });
+
+      expect(response.status).toBe(201);
+      const log = await prisma.apiLog.findFirst({ where: { userId } });
+      expect((log?.metadata as Record<string, unknown>)?._cost_estimated).toBe(true);
+      // fallback is gpt-4o: (500*5 + 200*15) / 1_000_000 = 0.0055
+      expect(log?.cost).toBeCloseTo(0.0055, 6);
+    });
+
+    it('overwrites wrong costs for known models in a batch', async () => {
+      // gpt-4o-mini: $0.15/M input + $0.60/M output
+      // 2000 input + 1000 output = (2000*0.15 + 1000*0.60) / 1_000_000 = 0.0009
+      const response = await request(app)
+        .post('/api/v1/log/batch')
+        .set('Authorization', `Bearer ${apiKey}`)
+        .send([
+          {
+            provider: 'openai',
+            model: 'gpt-4o-mini',
+            inputTokens: 2000,
+            outputTokens: 1000,
+            cost: 9.99, // intentionally wrong
+          },
+        ]);
+
+      expect(response.status).toBe(201);
+      expect(response.body.count).toBe(1);
+      const log = await prisma.apiLog.findFirst({ where: { userId } });
+      expect(log?.cost).toBeCloseTo(0.0009, 6);
+    });
+
+    it('sets _cost_estimated for unknown model in a batch', async () => {
+      const response = await request(app)
+        .post('/api/v1/log/batch')
+        .set('Authorization', `Bearer ${apiKey}`)
+        .send([
+          {
+            provider: 'anthropic',
+            model: 'claude-99-opus-future',
+            inputTokens: 1000,
+            outputTokens: 500,
+            cost: 0.001,
+          },
+        ]);
+
+      expect(response.status).toBe(201);
+      const log = await prisma.apiLog.findFirst({ where: { userId } });
+      expect((log?.metadata as Record<string, unknown>)?._cost_estimated).toBe(true);
+    });
+  });
+
   describe('GET /api/v1/stats/overview', () => {
     it('should return total spend and requests', async () => {
       await prisma.apiLog.createMany({

@@ -37,6 +37,11 @@ declare global {
         email: string;
         apiKey?: string;
       };
+      quota?: {
+        allowed: boolean;
+        current: number;
+        limit: number;
+      };
     }
   }
 }

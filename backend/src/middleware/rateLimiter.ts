@@ -1,130 +1,111 @@
 import rateLimit from 'express-rate-limit';
-import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { Request } from 'express';
 
-const isRateLimited = process.env.NODE_ENV === 'production';
+const isDev = process.env.NODE_ENV === 'development';
 
-const createLimiter = (handler: RequestHandler): RequestHandler =>
-  isRateLimited ? handler : (_req, _res, next) => next();
+// Keyed by API key header, fallback to IP
+const apiKeyGenerator = (req: Request): string =>
+  (req.headers['x-api-key'] as string) ||
+  req.ip ||
+  'unknown';
 
-const rateLimitResponse = (
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-  windowMs: number,
-): void => {
-  const resetTime = (req as { rateLimit?: { resetTime?: Date } }).rateLimit
-    ?.resetTime;
-  const retryAfter = resetTime
-    ? Math.ceil((resetTime.getTime() - Date.now()) / 1000)
-    : Math.ceil(windowMs / 1000);
-  res.status(429).json({ error: 'Rate limit exceeded', retryAfter });
-};
-
-/**
- * Rate limiter for log ingestion endpoints.
- * 1000 requests per hour, keyed on X-API-Key header, then Bearer token, then IP.
- */
-const LOG_WINDOW_MS = 60 * 60_000; // 1 hour
-
-export const logRateLimiter = createLimiter(
-  rateLimit({
-    windowMs: LOG_WINDOW_MS,
-    max: 1000,
-    keyGenerator: (req: Request): string => {
-      const xApiKey = req.headers['x-api-key'];
-      if (xApiKey) return Array.isArray(xApiKey) ? xApiKey[0] : xApiKey;
-      const auth = req.headers.authorization ?? '';
-      if (auth.startsWith('Bearer ')) return auth.slice(7);
-      return req.ip ?? 'unknown';
-    },
-    handler: (req, res, next) => rateLimitResponse(req, res, next, LOG_WINDOW_MS),
-    standardHeaders: true,
-    legacyHeaders: false,
-  }),
-);
-
-/**
- * Rate limiter for API stats endpoints (per user ID, fallback to IP).
- */
-const API_WINDOW_MS = 60_000; // 1 minute
-
-export const apiRateLimiter = createLimiter(
-  rateLimit({
-    windowMs: API_WINDOW_MS,
-    max: 100,
-    keyGenerator: (req: Request): string =>
-      (req as { user?: { id?: string } }).user?.id ?? req.ip ?? 'unknown',
-    handler: (req, res, next) => rateLimitResponse(req, res, next, API_WINDOW_MS),
-    standardHeaders: true,
-    legacyHeaders: false,
-  }),
-);
-
-/**
- * Rate limiter for authentication endpoints — 100 requests per minute per IP.
- */
-const AUTH_WINDOW_MS = 60_000; // 1 minute
-
-export const authRateLimiter = createLimiter(
-  rateLimit({
-    windowMs: AUTH_WINDOW_MS,
-    max: 100,
-    handler: (req, res, next) => rateLimitResponse(req, res, next, AUTH_WINDOW_MS),
-    standardHeaders: true,
-    legacyHeaders: false,
-  }),
-);
-
-// ---------------------------------------------------------------------------
-// App-level limiters (active in all envs except NODE_ENV === 'test')
-// ---------------------------------------------------------------------------
-
-/**
- * SDK single-log ingestion: 1000 requests per hour per API key.
- */
+// For SDK log ingestion (single events)
 export const logIngestionLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 1000,
-  keyGenerator: (req: Request): string =>
-    (req.headers['x-api-key'] as string) || req.ip || 'unknown',
+  max: isDev ? 10000 : 1000,
+  keyGenerator: apiKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     status: 'error',
-    message: 'Rate limit exceeded. Max 1000 log requests per hour.',
-    retryAfter: 'See Retry-After header',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many log requests. Max 1000/hour per API key.',
   },
-  skip: (req) => process.env.NODE_ENV === 'test',
 });
 
-/**
- * SDK batch ingestion: 100 batches per hour per API key (= up to 10,000 events/hr).
- */
+// Stricter for batch — each batch = up to 100 events
 export const batchLogLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 100,
-  keyGenerator: (req: Request): string =>
-    (req.headers['x-api-key'] as string) || req.ip || 'unknown',
+  max: isDev ? 1000 : 100,
+  keyGenerator: apiKeyGenerator,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     status: 'error',
-    message: 'Batch rate limit exceeded. Max 100 batch requests per hour.',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many batch requests. Max 100/hour per API key.',
   },
-  skip: (req) => process.env.NODE_ENV === 'test',
 });
 
-/**
- * Auth routes: 20 attempts per 15 minutes per IP.
- */
+// For auth routes — prevent brute force
+// Keyed by IP (not API key — user doesn't have one yet)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: isDev ? 1000 : 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     status: 'error',
+    code: 'RATE_LIMIT_EXCEEDED',
     message: 'Too many auth attempts. Try again in 15 minutes.',
   },
-  skip: (req) => process.env.NODE_ENV === 'test',
+});
+
+// For stats/dashboard endpoints
+export const statsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 10000 : 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: {
+    status: 'error',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many requests. Max 300/minute.',
+  },
+});
+
+// For project endpoints
+export const projectsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 10000 : 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: {
+    status: 'error',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many requests. Max 100/minute.',
+  },
+});
+
+// For budget endpoints
+export const budgetLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 10000 : 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: {
+    status: 'error',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many requests. Max 100/minute.',
+  },
+});
+
+// For API key regeneration — strict to prevent key-cycling abuse
+export const keyRegenerationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: isDev ? 100 : 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: {
+    status: 'error',
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many key regeneration attempts. Max 3/hour.',
+  },
 });

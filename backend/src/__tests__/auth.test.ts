@@ -242,3 +242,119 @@ describe('GET /auth/verify', () => {
   });
 });
 
+describe('POST /auth/api-key/regenerate', () => {
+  beforeEach(async () => {
+    await prisma.apiLog.deleteMany();
+    await prisma.budget.deleteMany();
+    await prisma.project.deleteMany();
+    await prisma.user.deleteMany();
+  });
+
+  it('should return a new API key', async () => {
+    await request(app).post('/auth/signup').send({
+      email: 'regen@example.com',
+      password: 'password123',
+    });
+    const loginRes = await request(app).post('/auth/login').send({
+      email: 'regen@example.com',
+      password: 'password123',
+    });
+
+    const res = await request(app)
+      .post('/auth/api-key/regenerate')
+      .set('Authorization', `Bearer ${loginRes.body.token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
+    expect(res.body.apiKey).toMatch(/^ast_/);
+  });
+
+  it('should invalidate the old key', async () => {
+    const signupRes = await request(app).post('/auth/signup').send({
+      email: 'regen-invalidate@example.com',
+      password: 'password123',
+    });
+    const oldApiKey = signupRes.body.apiKey as string;
+
+    const loginRes = await request(app).post('/auth/login').send({
+      email: 'regen-invalidate@example.com',
+      password: 'password123',
+    });
+
+    await request(app)
+      .post('/auth/api-key/regenerate')
+      .set('Authorization', `Bearer ${loginRes.body.token}`);
+
+    // Old key should no longer authenticate log requests.
+    const logRes = await request(app)
+      .post('/api/v1/log')
+      .set('Authorization', `Bearer ${oldApiKey}`)
+      .send({ provider: 'openai', model: 'gpt-4o', inputTokens: 10, outputTokens: 5, cost: 0.001 });
+
+    expect(logRes.status).toBe(401);
+  });
+
+  it('should persist the new key in the database', async () => {
+    await request(app).post('/auth/signup').send({
+      email: 'regen-db@example.com',
+      password: 'password123',
+    });
+    const loginRes = await request(app).post('/auth/login').send({
+      email: 'regen-db@example.com',
+      password: 'password123',
+    });
+
+    const regenRes = await request(app)
+      .post('/auth/api-key/regenerate')
+      .set('Authorization', `Bearer ${loginRes.body.token}`);
+
+    const newApiKey = regenRes.body.apiKey as string;
+    const user = await prisma.user.findUnique({ where: { email: 'regen-db@example.com' } });
+    expect(user!.apiKey).toBe(newApiKey);
+  });
+
+  it('new key should authenticate log requests', async () => {
+    await request(app).post('/auth/signup').send({
+      email: 'regen-auth@example.com',
+      password: 'password123',
+    });
+    const loginRes = await request(app).post('/auth/login').send({
+      email: 'regen-auth@example.com',
+      password: 'password123',
+    });
+
+    const regenRes = await request(app)
+      .post('/auth/api-key/regenerate')
+      .set('Authorization', `Bearer ${loginRes.body.token}`);
+
+    const newApiKey = regenRes.body.apiKey as string;
+
+    const logRes = await request(app)
+      .post('/api/v1/log')
+      .set('Authorization', `Bearer ${newApiKey}`)
+      .send({ provider: 'openai', model: 'gpt-4o', inputTokens: 10, outputTokens: 5, cost: 0.001 });
+
+    expect(logRes.status).toBe(201);
+  });
+
+  it('should require JWT auth', async () => {
+    const res = await request(app).post('/auth/api-key/regenerate');
+    expect(res.status).toBe(401);
+  });
+
+  it('should reject API key auth (JWT only)', async () => {
+    const signupRes = await request(app).post('/auth/signup').send({
+      email: 'regen-apikey-auth@example.com',
+      password: 'password123',
+    });
+    const apiKey = signupRes.body.apiKey as string;
+
+    const res = await request(app)
+      .post('/auth/api-key/regenerate')
+      .set('Authorization', `Bearer ${apiKey}`);
+
+    // API keys look like JWTs to the middleware — it will fail JWT verification.
+    expect(res.status).toBe(401);
+  });
+});
+
