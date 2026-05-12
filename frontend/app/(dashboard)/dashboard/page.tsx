@@ -13,7 +13,7 @@ import ModelBarChart from '@/components/charts/ModelBarChart';
 import MetadataFilterBar, { type MetadataField } from '@/components/MetadataFilterBar';
 import FeatureBreakdownTable from '@/components/FeatureBreakdownTable';
 import UserCostTable from '@/components/UserCostTable';
-import EmptyState from '@/components/shared/EmptyState';
+import ActivationGuide from '@/components/shared/ActivationGuide';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -120,10 +120,7 @@ export default function OverviewPage() {
       </div>
 
       {!hasData && !isRefreshing && !hasErrors ? (
-        <EmptyState
-          title="No stats yet"
-          description="Start tracking your AI usage to see analytics here."
-        />
+        <ActivationGuide />
       ) : (
         <>
           {overviewStats.error ? (

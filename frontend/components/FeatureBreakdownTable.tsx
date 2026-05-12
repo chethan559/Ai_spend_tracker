@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useState } from 'react';
-import { ChevronDown, ChevronRight, Code2 } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -26,6 +26,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useFeatureLogs, useFeatureSparkline } from '@/hooks/useMetadataStats';
+import ActivationGuide from '@/components/shared/ActivationGuide';
 import type { MetadataStat } from '@/types';
 
 interface FeatureBreakdownTableProps {
@@ -185,25 +186,8 @@ function TableSkeletonRows() {
   );
 }
 
-function EmptyTableState({ field }: { field: string }) {
-  return (
-    <div className="flex flex-col items-center gap-4 px-6 py-12 text-center">
-      <Code2 className="h-10 w-10 text-muted-foreground" />
-      <div className="space-y-1">
-        <p className="text-sm font-medium">No data yet</p>
-        <p className="text-sm text-muted-foreground">
-          Make sure you&apos;re passing a{' '}
-          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-            {field}
-          </code>{' '}
-          tag in your SDK calls.
-        </p>
-      </div>
-      <pre className="w-full max-w-sm overflow-x-auto rounded-lg bg-muted p-4 text-left font-mono text-xs">
-        {`tracker.openai.chat({\n  messages: [...],\n  metadata: {\n    ${field}: 'my-${field}'\n  }\n})`}
-      </pre>
-    </div>
-  );
+function EmptyTableState() {
+  return <ActivationGuide compact />;
 }
 
 export default function FeatureBreakdownTable({
@@ -243,7 +227,7 @@ export default function FeatureBreakdownTable({
               ) : !sorted.length ? (
                 <TableRow>
                   <TableCell colSpan={7} className="p-0">
-                    <EmptyTableState field={field} />
+                    <EmptyTableState />
                   </TableCell>
                 </TableRow>
               ) : (
