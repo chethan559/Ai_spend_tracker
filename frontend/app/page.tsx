@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
@@ -25,16 +25,49 @@ function Fade({
   delay?: number;
   className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const show = () => {
+      el.style.opacity = '1';
+      el.style.transform = 'none';
+    };
+
+    // Already in viewport on load — show immediately (CSS transition handles delay)
+    if (el.getBoundingClientRect().top < window.innerHeight) {
+      show();
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          show();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.05 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <motion.div
+    <div
+      ref={ref}
       className={className}
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-64px' }}
-      transition={{ duration: 0.45, delay, ease: [0.22, 1, 0.36, 1] }}
+      style={{
+        opacity: 0,
+        transform: 'translateY(14px)',
+        transition: `opacity 0.5s ease-out ${delay}s, transform 0.5s ease-out ${delay}s`,
+        willChange: 'opacity, transform',
+      }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
