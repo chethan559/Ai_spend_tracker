@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
 import Link from 'next/link';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -15,7 +14,7 @@ const TEXT = '#ffffff';
 const MUTED = '#71717a';
 const FAINT = '#27272a';
 
-// ─── Fade in on scroll ──────────────────────────────────────────────────────
+// ─── Fade — renders immediately, no opacity:0 flash ─────────────────────────
 function Fade({
   children,
   delay = 0,
@@ -25,50 +24,7 @@ function Fade({
   delay?: number;
   className?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const show = () => {
-      el.style.opacity = '1';
-      el.style.transform = 'none';
-    };
-
-    // Already in viewport on load — show immediately (CSS transition handles delay)
-    if (el.getBoundingClientRect().top < window.innerHeight) {
-      show();
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          show();
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.05 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: 0,
-        transform: 'translateY(14px)',
-        transition: `opacity 0.5s ease-out ${delay}s, transform 0.5s ease-out ${delay}s`,
-        willChange: 'opacity, transform',
-      }}
-    >
-      {children}
-    </div>
-  );
+  return <div className={className}>{children}</div>;
 }
 
 // ─── Sparkline SVG ──────────────────────────────────────────────────────────
@@ -95,10 +51,10 @@ function Spark({ values }: { values: number[] }) {
 
 // ─── Mock FeatureBreakdownTable ─────────────────────────────────────────────
 const ROWS = [
-  { name: 'chat-assistant',   cost: 12.44, req: 384, pct: 48, spark: [4,7,6,10,8,12,15] },
-  { name: 'resume-parser',    cost:  4.21, req: 142, pct: 16, spark: [2,3,4, 3,5, 4, 6] },
-  { name: 'content-generator',cost:  3.76, req: 128, pct: 14, spark: [3,5,3, 6,4, 6, 5] },
-  { name: 'email-summarizer', cost:  1.09, req:  37, pct:  4, spark: [1,2,1, 2,1, 2, 1] },
+  { name: 'chat-assistant',    cost: 12.44, req: 384, pct: 48, spark: [4,7,6,10,8,12,15] },
+  { name: 'resume-parser',     cost:  4.21, req: 142, pct: 16, spark: [2,3,4, 3,5, 4, 6] },
+  { name: 'content-generator', cost:  3.76, req: 128, pct: 14, spark: [3,5,3, 6,4, 6, 5] },
+  { name: 'email-summarizer',  cost:  1.09, req:  37, pct:  4, spark: [1,2,1, 2,1, 2, 1] },
 ] as const;
 
 function barColor(pct: number) {
@@ -111,7 +67,6 @@ function MockTable() {
   const [active, setActive] = useState<string | null>(null);
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden' }}>
-      {/* header */}
       <div style={{ padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Feature Breakdown</span>
         <span style={{ fontSize: 12, background: ORANGE_DIM, border: `1px solid ${ORANGE_BORDER}`, color: ORANGE, borderRadius: 20, padding: '2px 10px', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -119,7 +74,6 @@ function MockTable() {
           Live
         </span>
       </div>
-      {/* table */}
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
@@ -159,7 +113,6 @@ function MockTable() {
           ))}
         </tbody>
       </table>
-      {/* footer */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', borderTop: `1px solid ${BORDER}` }}>
         {[['Total', '$21.50'], ['Requests', '691'], ['Avg/req', '$0.031']].map(([k, v]) => (
           <div key={k} style={{ padding: '12px 20px', borderRight: `1px solid ${BORDER}` }}>
@@ -228,42 +181,44 @@ function CodeBlock() {
   );
 }
 
-// ─── Demo modal ─────────────────────────────────────────────────────────────
-function DemoModal({ onClose }: { onClose: () => void }) {
+// ─── Metadata code block (Step 02) ──────────────────────────────────────────
+const META_TOKENS = [
+  [{ t: 'metadata', c: '#7dd3fc' }, { t: ': {', c: TEXT }],
+  [{ t: "  feature", c: '#7dd3fc' }, { t: ': ', c: TEXT }, { t: "'resume-parser'", c: '#86efac' }, { t: ',', c: TEXT }],
+  [{ t: "  userId", c: '#7dd3fc' }, { t: ': ', c: TEXT }, { t: "'u_123'", c: '#86efac' }, { t: ',', c: TEXT }],
+  [{ t: "  environment", c: '#7dd3fc' }, { t: ': ', c: TEXT }, { t: "'production'", c: '#86efac' }],
+  [{ t: '}', c: TEXT }],
+];
+
+function MetaCodeBlock() {
   return (
-    <div
-      onClick={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)' }}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.18 }}
-        onClick={e => e.stopPropagation()}
-        style={{ width: '100%', maxWidth: 640, background: BG, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${BORDER}` }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Live Dashboard Preview</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: MUTED, fontSize: 20, lineHeight: 1, cursor: 'pointer' }}>×</button>
-        </div>
-        <div style={{ padding: 20 }}>
-          <MockTable />
-          <p style={{ marginTop: 14, textAlign: 'center', fontSize: 12, color: FAINT }}>
-            Real data from your app. Refresh every 30 seconds.
-          </p>
-        </div>
-      </motion.div>
+    <div style={{ marginTop: 20, background: '#0d0d0f', border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+      <pre style={{ margin: 0, padding: '16px 20px', fontSize: 12.5, lineHeight: 1.8, overflowX: 'auto' }}>
+        <code>
+          {META_TOKENS.map((line, li) => (
+            <div key={li}>
+              {line.map((tok, ti) => <span key={ti} style={{ color: tok.c }}>{tok.t}</span>)}
+            </div>
+          ))}
+        </code>
+      </pre>
     </div>
+  );
+}
+
+// ─── Friction reducer line ───────────────────────────────────────────────────
+function FrictionNote() {
+  return (
+    <p style={{ fontSize: 12, color: '#3f3f46', marginTop: 8, textAlign: 'center' }}>
+      No credit card · 50K events free · cancel anytime
+    </p>
   );
 }
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 export default function Page() {
-  const [demo, setDemo] = useState(false);
-
   return (
     <div style={{ minHeight: '100vh', background: BG, color: TEXT, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      {demo && <DemoModal onClose={() => setDemo(false)} />}
 
       {/* ── Navbar ─────────────────────────────────────────────────────── */}
       <header style={{ position: 'sticky', top: 0, zIndex: 40, borderBottom: `1px solid ${BORDER}`, background: 'rgba(10,10,11,0.85)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
@@ -274,7 +229,12 @@ export default function Page() {
           </Link>
           <nav style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
             <div style={{ display: 'flex', gap: 24, fontSize: 14, color: MUTED }} className="hidden-mobile">
-              {[['Features','#features'],['Pricing','#pricing'],['Docs','#'],['GitHub','#']].map(([l,h]) => (
+              {[
+                ['Features', '#features'],
+                ['Pricing', '#pricing'],
+                ['Docs', '/docs'],
+                ['GitHub', 'https://github.com/chethan559/Ai_spend_tracker'],
+              ].map(([l, h]) => (
                 <a key={l} href={h} style={{ color: MUTED, textDecoration: 'none', transition: 'color 0.15s' }}
                   onMouseEnter={e => (e.currentTarget.style.color = TEXT)}
                   onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
@@ -315,22 +275,24 @@ export default function Page() {
         </Fade>
 
         <Fade delay={0.17}>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
-            <Link href="/signup" style={{ background: ORANGE, color: '#fff', padding: '12px 28px', borderRadius: 9, fontSize: 15, fontWeight: 700, textDecoration: 'none', transition: 'opacity 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
-              Start free — no card required
-            </Link>
-            <button onClick={() => setDemo(true)} style={{ background: 'none', border: `1px solid ${BORDER}`, color: MUTED, padding: '12px 24px', borderRadius: 9, fontSize: 15, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s' }}
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
+            <div>
+              <Link href="/signup" style={{ display: 'inline-block', background: ORANGE, color: '#fff', padding: '12px 28px', borderRadius: 9, fontSize: 15, fontWeight: 700, textDecoration: 'none', transition: 'opacity 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+              >
+                Start free — no card required
+              </Link>
+            </div>
+            <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', background: 'none', border: `1px solid ${BORDER}`, color: MUTED, padding: '12px 24px', borderRadius: 9, fontSize: 15, fontWeight: 500, textDecoration: 'none', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = MUTED; e.currentTarget.style.color = TEXT; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED; }}
             >
               View demo →
-            </button>
+            </Link>
           </div>
-          <p style={{ fontSize: 13, color: '#3f3f46' }}>
-            Tracking AI spend for <span style={{ color: MUTED }}>340+ developers</span>
+          <p style={{ fontSize: 13, color: '#3f3f46', marginTop: 12 }}>
+            Free forever · 50K events/month · no credit card
           </p>
         </Fade>
 
@@ -393,7 +355,7 @@ export default function Page() {
               n: '02',
               title: 'Tag your calls',
               body: "Pass a feature name, user ID, or environment in the metadata field. That's it.",
-              extra: null,
+              extra: <MetaCodeBlock />,
             },
             {
               n: '03',
@@ -426,10 +388,10 @@ export default function Page() {
         </Fade>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 2 }}>
           {[
-            { icon: '⬡', title: 'Cost by feature', body: 'Tag each call with a feature name. Know exactly which parts of your product are expensive.' },
-            { icon: '◎', title: 'Cost by user', body: 'Spot your most expensive users instantly. Set limits before they become a problem.' },
+            { icon: '⬡', title: 'Cost by feature', body: 'Know which AI features are profitable before your next sprint review.' },
+            { icon: '◎', title: 'Cost by user', body: 'Stop your 3 most expensive users from eating 40% of your budget undetected.' },
             { icon: '▦', title: 'Model comparison', body: 'Switch from GPT-4 to Haiku? See the cost delta immediately, per feature.' },
-            { icon: '◈', title: 'Budget alerts', body: 'Daily and monthly limits per feature or project. Slack and email before you overspend.' },
+            { icon: '◈', title: 'Budget alerts', body: 'Get Slack or email before you overspend — not after the invoice arrives.' },
             { icon: '≡', title: 'Drill-down charts', body: 'Click any feature to see its daily cost trend over any date range.' },
             { icon: '⤓', title: 'CSV export', body: 'Export everything for your accountant, your investors, or your own analysis.' },
           ].map(({ icon, title, body }, i) => (
@@ -476,7 +438,7 @@ export default function Page() {
               per: '/mo',
               tag: 'Most popular',
               items: ['500,000 events / month', 'Unlimited projects', '90-day retention', 'Slack + email alerts', 'CSV export'],
-              cta: 'Start 14-day trial',
+              cta: 'Get early access →',
               href: '/signup?plan=starter',
             },
             {
@@ -485,7 +447,7 @@ export default function Page() {
               per: '/mo',
               tag: null,
               items: ['Unlimited events', 'Unlimited projects', '1-year retention', 'Team seats (5)', 'API access', 'Priority support'],
-              cta: 'Start 14-day trial',
+              cta: 'Get early access →',
               href: '/signup?plan=growth',
             },
           ].map(({ name, price, per, tag, items, cta, href }, i) => {
@@ -517,7 +479,7 @@ export default function Page() {
                   >
                     {cta}
                   </Link>
-                  {featured && <p style={{ textAlign: 'center', fontSize: 11, color: MUTED, marginTop: 10 }}>$0.00 due today · cancel anytime</p>}
+                  <FrictionNote />
                 </div>
               </Fade>
             );
@@ -542,7 +504,7 @@ export default function Page() {
           >
             Start free
           </Link>
-          <p style={{ fontSize: 12, color: '#3f3f46', marginTop: 14 }}>Free forever · no credit card · 2-minute setup</p>
+          <FrictionNote />
         </Fade>
       </section>
 
@@ -555,11 +517,27 @@ export default function Page() {
             <span style={{ width: 22, height: 22, background: ORANGE, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>$</span>
             AI Spend Tracker
           </div>
-          <p style={{ fontSize: 12, color: '#3f3f46' }}>Built by indie developers, for indie developers.</p>
+          <p style={{ fontSize: 12, color: '#3f3f46' }}>
+            Built by{' '}
+            <a
+              href="https://www.linkedin.com/in/chethan-kumar"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: MUTED, textDecoration: 'none' }}
+            >
+              Chethan Kumar
+            </a>
+            {' '}— tired of OpenAI bill shock.
+          </p>
         </div>
         <nav style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          {['Privacy','Terms','Docs','GitHub','Twitter'].map(l => (
-            <a key={l} href="#" style={{ fontSize: 13, color: '#3f3f46', textDecoration: 'none', transition: 'color 0.15s' }}
+          {[
+            ['Privacy', '/privacy'],
+            ['Terms', '/terms'],
+            ['Docs', '/docs'],
+            ['GitHub', 'https://github.com/chethan559/Ai_spend_tracker'],
+          ].map(([l, h]) => (
+            <a key={l} href={h} style={{ fontSize: 13, color: '#3f3f46', textDecoration: 'none', transition: 'color 0.15s' }}
               onMouseEnter={e => (e.currentTarget.style.color = MUTED)}
               onMouseLeave={e => (e.currentTarget.style.color = '#3f3f46')}
             >{l}</a>
