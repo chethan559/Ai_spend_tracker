@@ -34,7 +34,7 @@ export default function StatsOverview({ data, isLoading }: StatsOverviewProps) {
       style={{
         display: 'flex',
         borderBottom: '1px solid #1c1c1f',
-        background: '#0a0a0b',
+        background: '#111113',
         overflowX: 'auto',
       }}
     >
@@ -47,7 +47,7 @@ export default function StatsOverview({ data, isLoading }: StatsOverviewProps) {
             style={{
               flex: '1 1 0',
               minWidth: 140,
-              padding: '16px 20px',
+              padding: '20px 32px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',

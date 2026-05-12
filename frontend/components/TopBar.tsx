@@ -21,8 +21,8 @@ export default function TopBar() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 20px',
-        background: '#0a0a0b',
+        padding: '0 32px',
+        background: '#111113',
         borderBottom: '1px solid #1c1c1f',
         flexShrink: 0,
       }}

@@ -51,11 +51,11 @@
   --radius: 0.5rem;
 
   /* Page & surface */
-  --background: #0a0a0b;
+  --background: #111113;
   --foreground: #ffffff;
-  --card: #111113;
+  --card: #1a1a1d;
   --card-foreground: #ffffff;
-  --popover: #111113;
+  --popover: #1a1a1d;
   --popover-foreground: #ffffff;
 
   /* Orange primary */
@@ -86,7 +86,7 @@
   --chart-5: #ec4899;
 
   /* Sidebar */
-  --sidebar: #0a0a0b;
+  --sidebar: #111113;
   --sidebar-foreground: #ffffff;
   --sidebar-primary: #f97316;
   --sidebar-primary-foreground: #ffffff;

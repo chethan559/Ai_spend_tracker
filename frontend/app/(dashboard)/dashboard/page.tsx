@@ -74,9 +74,9 @@ export default function OverviewPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 20px',
+          padding: '10px 32px',
           borderBottom: '1px solid #1c1c1f',
-          background: '#0a0a0b',
+          background: '#111113',
           gap: 12,
           flexWrap: 'wrap',
         }}
@@ -150,7 +150,7 @@ export default function OverviewPage() {
       )}
 
       {/* ── Main content ── */}
-      <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {/* Daily chart */}
         {dailyStats.error ? (

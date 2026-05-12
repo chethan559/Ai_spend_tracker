@@ -13,7 +13,7 @@ export default function DashboardLayout({
 }) {
   return (
     <ProtectedRoute>
-      <div style={{ minHeight: '100vh', background: '#0a0a0b', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: '#111113', display: 'flex', flexDirection: 'column' }}>
         <TopBar />
         <main style={{ flex: 1 }}>
           {children}
