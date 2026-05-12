@@ -1,6 +1,7 @@
 #!/bin/bash
-API_KEY="ast_5083b5ac-7f40-4805-b951-966d727f8cf1"
-BASE_URL="http://localhost:3001"
+# Load from environment variable instead
+API_KEY="${AST_API_KEY:?Error: AST_API_KEY is not set}"
+BASE_URL="${AST_BASE_URL:-http://localhost:3001}"
 
 features=("resume-parser" "chat-assistant" "email-summarizer" "onboarding-flow" "image-analyzer")
 providers=("openai" "anthropic" "google")
