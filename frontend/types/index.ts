@@ -112,6 +112,17 @@ export interface TotalSpendProvider {
   requests: number;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  totalSpend: number;
+  totalRequests: number;
+  lastActiveAt: string | null;
+}
+
 export interface TotalSpendResult {
   totalCost: number;
   totalRequests: number;

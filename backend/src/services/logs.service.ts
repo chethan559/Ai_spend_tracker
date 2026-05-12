@@ -146,6 +146,7 @@ export async function getUserStats(
   userId: string,
   startDate?: Date,
   endDate?: Date,
+  projectId?: string,
 ): Promise<UserStatsResult> {
   try {
     const rangeStart = startDate ?? startOfMonth(new Date());
@@ -157,6 +158,7 @@ export async function getUserStats(
         gte: rangeStart,
         lte: rangeEnd,
       },
+      ...(projectId ? { projectId } : {}),
     };
 
     const [aggregate, totalRequests] = await Promise.all([

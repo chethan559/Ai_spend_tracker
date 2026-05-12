@@ -143,8 +143,10 @@ export async function getOverviewHandler(
     ? new Date(validation.data.endDate)
     : undefined;
 
+  const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
+
   try {
-    const stats = await getUserStats(userId, start, end);
+    const stats = await getUserStats(userId, start, end, projectId);
     res.status(200).json({
       ...stats,
       period: {

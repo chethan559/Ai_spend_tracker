@@ -6,6 +6,7 @@ import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import StatsOverview from '@/components/dashboard/StatsOverview';
+import ProjectSelector from '@/components/dashboard/ProjectSelector';
 import DailySpendChart from '@/components/charts/DailySpendChart';
 import ProviderPieChart from '@/components/charts/ProviderPieChart';
 import ModelBarChart from '@/components/charts/ModelBarChart';
@@ -21,7 +22,10 @@ import {
   useProviderBreakdown,
 } from '@/hooks/useStats';
 import { useMetadataStats } from '@/hooks/useMetadataStats';
+import useAuthStore from '@/store/authStore';
 import type { MetadataField } from '@/components/MetadataFilterBar';
+
+const PROJECT_LIMITS: Record<string, number> = { free: 1, starter: 3, growth: -1 };
 
 const PERIODS: { label: string; days: number }[] = [
   { label: '7d',  days: 7  },
@@ -35,11 +39,15 @@ export default function OverviewPage() {
     to: new Date(),
   }));
   const [metadataField, setMetadataField] = useState<MetadataField>('feature');
+  const [activeProject, setActiveProject] = useState<string | null>(null);
 
-  const overviewStats = useOverviewStats(dateRange.from, dateRange.to);
-  const dailyStats    = useDailyStats(30);
-  const providerStats = useProviderBreakdown(dateRange.from, dateRange.to);
-  const modelStats    = useModelBreakdown(dateRange.from, dateRange.to);
+  const user = useAuthStore((s) => s.user);
+  const projectLimit = PROJECT_LIMITS[user?.plan ?? 'free'] ?? 1;
+
+  const overviewStats = useOverviewStats(dateRange.from, dateRange.to, activeProject);
+  const dailyStats    = useDailyStats(30, activeProject);
+  const providerStats = useProviderBreakdown(dateRange.from, dateRange.to, activeProject);
+  const modelStats    = useModelBreakdown(dateRange.from, dateRange.to, activeProject);
   const metadataStats = useMetadataStats(metadataField, dateRange);
 
   const isRefreshing =
@@ -81,7 +89,16 @@ export default function OverviewPage() {
           flexWrap: 'wrap',
         }}
       >
-        {/* Period quick-select */}
+        {/* Project selector + period quick-select */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <ProjectSelector
+            activeProjectId={activeProject}
+            onSelect={setActiveProject}
+            projectLimit={projectLimit}
+          />
+          <span style={{ color: '#27272a', fontSize: 14 }}>|</span>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {PERIODS.map(({ label, days }) => {
             const active =

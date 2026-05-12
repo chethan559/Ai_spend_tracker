@@ -50,12 +50,15 @@ export async function getDailyStats(
   const startDate = parseDate(req.query.startDate as string | undefined);
   const endDate = parseDate(req.query.endDate as string | undefined);
 
+  const projectId = (req.query.projectId as string | undefined) || undefined;
+
   try {
     const stats = await fetchDailyStats(userId, {
       days,
       startDate,
       endDate,
       timezone: timezoneParam,
+      projectId,
     });
 
     res.status(200).json({
@@ -96,8 +99,10 @@ export async function getProviderBreakdown(
     return;
   }
 
+  const projectId = (req.query.projectId as string | undefined) || undefined;
+
   try {
-    const providers = await fetchProviderBreakdown(userId, startDate, endDate);
+    const providers = await fetchProviderBreakdown(userId, startDate, endDate, projectId);
     const totalSpend = providers.reduce((sum, p) => sum + p.spend, 0);
 
     res.status(200).json({
@@ -137,8 +142,10 @@ export async function getModelBreakdown(
     return;
   }
 
+  const projectId = (req.query.projectId as string | undefined) || undefined;
+
   try {
-    const models = await fetchModelBreakdown(userId, startDate, endDate);
+    const models = await fetchModelBreakdown(userId, startDate, endDate, projectId);
     const totalSpend = models.reduce((sum, m) => sum + m.spend, 0);
 
     res.status(200).json({
@@ -217,8 +224,10 @@ export async function getTotalSpendHandler(
   const endDate = parseDate(req.query.endDate as string | undefined)
     ?? endOfMonth(new Date());
 
+  const projectId = (req.query.projectId as string | undefined) || undefined;
+
   try {
-    const result = await fetchTotalSpend(userId, startDate, endDate);
+    const result = await fetchTotalSpend(userId, startDate, endDate, projectId);
     res.status(200).json(result);
   } catch (error) {
     logger.error('Get total spend failed', error as Error);
@@ -255,8 +264,10 @@ export async function getMetadataStats(
     return;
   }
 
+  const projectId = (req.query.projectId as string | undefined) || undefined;
+
   try {
-    const breakdown = await fetchMetadataStats(userId, key, startDate, endDate);
+    const breakdown = await fetchMetadataStats(userId, key, startDate, endDate, projectId);
     res.status(200).json({
       key,
       breakdown,

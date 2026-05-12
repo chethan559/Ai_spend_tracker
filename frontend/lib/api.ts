@@ -7,6 +7,7 @@ import type {
   DailyStat,
   MetadataStat,
   ModelStat,
+  Project,
   ProviderDetail,
   ProviderStat,
   StatsOverview,
@@ -213,10 +214,11 @@ export async function getLogs(params: LogsQueryParams = {}): Promise<LogsRespons
 export async function getOverview(
   startDate?: string,
   endDate?: string,
+  projectId?: string | null,
 ): Promise<StatsOverview> {
   try {
     return await api.get<StatsOverview>('/api/v1/stats/overview', {
-      params: { startDate, endDate },
+      params: { startDate, endDate, ...(projectId ? { projectId } : {}) },
     });
   } catch (error) {
     throw error;
@@ -226,10 +228,14 @@ export async function getOverview(
 /**
  * Get daily stats for the last N days, bucketed in the given timezone.
  */
-export async function getDailyStats(days: number, timezone?: string): Promise<DailyStat[]> {
+export async function getDailyStats(
+  days: number,
+  timezone?: string,
+  projectId?: string | null,
+): Promise<DailyStat[]> {
   try {
     const response = await api.get<DailyStatsResponse>('/api/v1/stats/daily', {
-      params: { days, timezone },
+      params: { days, timezone, ...(projectId ? { projectId } : {}) },
     });
     return response.stats;
   } catch (error) {
@@ -243,10 +249,11 @@ export async function getDailyStats(days: number, timezone?: string): Promise<Da
 export async function getProviderBreakdown(
   startDate?: string,
   endDate?: string,
+  projectId?: string | null,
 ): Promise<ProviderStat[]> {
   try {
     const response = await api.get<ProviderBreakdownResponse>('/api/v1/stats/by-provider', {
-      params: { startDate, endDate },
+      params: { startDate, endDate, ...(projectId ? { projectId } : {}) },
     });
     return response.providers;
   } catch (error) {
@@ -260,10 +267,11 @@ export async function getProviderBreakdown(
 export async function getModelBreakdown(
   startDate?: string,
   endDate?: string,
+  projectId?: string | null,
 ): Promise<ModelStat[]> {
   try {
     const response = await api.get<ModelBreakdownResponse>('/api/v1/stats/by-model', {
-      params: { startDate, endDate },
+      params: { startDate, endDate, ...(projectId ? { projectId } : {}) },
     });
     return response.models;
   } catch (error) {
@@ -278,9 +286,10 @@ export async function getMetadataStats(
   field: string,
   startDate?: string,
   endDate?: string,
+  projectId?: string | null,
 ): Promise<MetadataStat[]> {
   const res: any = await api.get<any>('/api/v1/stats/by-metadata', {
-    params: { field, startDate, endDate },
+    params: { field, startDate, endDate, ...(projectId ? { projectId } : {}) },
   });
   const rows: { value: string; spend: number; requests: number }[] =
     res?.breakdown ?? res ?? [];
@@ -298,10 +307,11 @@ export async function getMetadataStats(
 export async function getTotalSpend(
   startDate?: string,
   endDate?: string,
+  projectId?: string | null,
 ): Promise<TotalSpendResult> {
   try {
     return await api.get<TotalSpendResult>('/api/v1/stats/total-spend', {
-      params: { startDate, endDate },
+      params: { startDate, endDate, ...(projectId ? { projectId } : {}) },
     });
   } catch (error) {
     throw error;
@@ -345,4 +355,20 @@ export async function getFeatureLogs(params: FeatureLogsParams): Promise<LogsRes
   } catch (error) {
     throw error;
   }
+}
+
+// ─── Projects ────────────────────────────────────────────────────────────────
+
+export async function getProjects(): Promise<Project[]> {
+  const res = await api.get<{ data: Project[] }>('/api/v1/projects');
+  return res.data;
+}
+
+export async function createProject(name: string, description?: string): Promise<Project> {
+  const res = await api.post<{ data: Project }>('/api/v1/projects', { name, description });
+  return res.data;
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  await api.delete<void>(`/api/v1/projects/${id}`);
 }

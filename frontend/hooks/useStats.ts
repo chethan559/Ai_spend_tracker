@@ -30,12 +30,10 @@ const toIsoDate = (date?: Date) => (date ? formatISO(date, { representation: 'da
 
 const browserTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-/**
- * Fetch overview stats for an optional date range.
- */
 export function useOverviewStats(
   startDate?: Date,
   endDate?: Date,
+  projectId?: string | null,
 ): UseQueryResult<StatsOverview> {
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
@@ -43,8 +41,8 @@ export function useOverviewStats(
   const enabled = Boolean(!startDate || !endDate || (start && end));
 
   const query = useQuery({
-    queryKey: ['stats', 'overview', start, end, timezone],
-    queryFn: () => getOverview(start, end),
+    queryKey: ['stats', 'overview', start, end, timezone, projectId ?? null],
+    queryFn: () => getOverview(start, end, projectId),
     enabled,
     refetchInterval: 30_000,
   });
@@ -57,15 +55,12 @@ export function useOverviewStats(
   };
 }
 
-/**
- * Fetch daily stats for the last N days, bucketed in the browser's timezone.
- */
-export function useDailyStats(days = 30): UseQueryResult<DailyStat[]> {
+export function useDailyStats(days = 30, projectId?: string | null): UseQueryResult<DailyStat[]> {
   const timezone = browserTimezone();
 
   const query = useQuery({
-    queryKey: ['stats', 'daily', days, timezone],
-    queryFn: () => getDailyStats(days, timezone),
+    queryKey: ['stats', 'daily', days, timezone, projectId ?? null],
+    queryFn: () => getDailyStats(days, timezone, projectId),
     refetchInterval: 30_000,
   });
 
@@ -76,12 +71,10 @@ export function useDailyStats(days = 30): UseQueryResult<DailyStat[]> {
   };
 }
 
-/**
- * Fetch provider breakdown for an optional date range.
- */
 export function useProviderBreakdown(
   startDate?: Date,
   endDate?: Date,
+  projectId?: string | null,
 ): UseQueryResult<ProviderStat[]> {
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
@@ -89,8 +82,8 @@ export function useProviderBreakdown(
   const enabled = Boolean(!startDate || !endDate || (start && end));
 
   const query = useQuery({
-    queryKey: ['stats', 'providers', start, end, timezone],
-    queryFn: () => getProviderBreakdown(start, end),
+    queryKey: ['stats', 'providers', start, end, timezone, projectId ?? null],
+    queryFn: () => getProviderBreakdown(start, end, projectId),
     enabled,
   });
 
@@ -101,9 +94,6 @@ export function useProviderBreakdown(
   };
 }
 
-/**
- * Fetch per-provider breakdown with daily history, MoM comparison, top models.
- */
 export function useProviderDetail(): UseQueryResult<ProviderDetail[]> {
   const query = useQuery({
     queryKey: ['stats', 'provider-detail'],
@@ -123,12 +113,10 @@ export function useProviderDetail(): UseQueryResult<ProviderDetail[]> {
   };
 }
 
-/**
- * Fetch total spend with provider breakdown and period-over-period change.
- */
 export function useTotalSpend(
   startDate?: Date,
   endDate?: Date,
+  projectId?: string | null,
 ): UseQueryResult<TotalSpendResult> {
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
@@ -136,8 +124,8 @@ export function useTotalSpend(
   const enabled = Boolean(!startDate || !endDate || (start && end));
 
   const query = useQuery({
-    queryKey: ['stats', 'total-spend', start, end, timezone],
-    queryFn: () => getTotalSpend(start, end),
+    queryKey: ['stats', 'total-spend', start, end, timezone, projectId ?? null],
+    queryFn: () => getTotalSpend(start, end, projectId),
     enabled,
     refetchInterval: 30_000,
   });
@@ -150,9 +138,6 @@ export function useTotalSpend(
   };
 }
 
-/**
- * Fetch the 20 most recent logs, refreshing every 10 seconds.
- */
 export function useLiveFeed() {
   const query = useQuery({
     queryKey: ['logs', 'live-feed'],
@@ -169,12 +154,10 @@ export function useLiveFeed() {
   };
 }
 
-/**
- * Fetch model breakdown for an optional date range.
- */
 export function useModelBreakdown(
   startDate?: Date,
   endDate?: Date,
+  projectId?: string | null,
 ): UseQueryResult<ModelStat[]> {
   const start = toIsoDate(startDate);
   const end = toIsoDate(endDate);
@@ -182,8 +165,8 @@ export function useModelBreakdown(
   const enabled = Boolean(!startDate || !endDate || (start && end));
 
   const query = useQuery({
-    queryKey: ['stats', 'models', start, end, timezone],
-    queryFn: () => getModelBreakdown(start, end),
+    queryKey: ['stats', 'models', start, end, timezone, projectId ?? null],
+    queryFn: () => getModelBreakdown(start, end, projectId),
     enabled,
   });
 

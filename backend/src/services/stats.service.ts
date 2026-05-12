@@ -64,7 +64,7 @@ export interface TotalSpendResult {
  */
 export async function getDailyStats(
   userId: string,
-  options: { days?: number; startDate?: Date; endDate?: Date; timezone?: string } = {},
+  options: { days?: number; startDate?: Date; endDate?: Date; timezone?: string; projectId?: string } = {},
 ): Promise<DailyStat[]> {
   const timezone = options.timezone ?? 'UTC';
 
@@ -80,9 +80,13 @@ export async function getDailyStats(
     startDate = startOfDay(subDays(endDate, days - 1));
   }
 
+  const projectFilter = options.projectId
+    ? Prisma.sql`AND "projectId" = ${options.projectId}`
+    : Prisma.sql``;
+
   const rows = await prisma.$queryRaw<
     { date: Date; spend: number; requests: bigint }[]
-  >`
+  >(Prisma.sql`
     SELECT DATE(("timestamp" AT TIME ZONE 'UTC') AT TIME ZONE ${timezone}::text) AS date,
            COALESCE(SUM(cost), 0) AS spend,
            COUNT(*) AS requests
@@ -90,9 +94,10 @@ export async function getDailyStats(
     WHERE "userId" = ${userId}
       AND "timestamp" >= ${startDate}
       AND "timestamp" <= ${endDate}
+      ${projectFilter}
     GROUP BY 1
     ORDER BY 1 ASC
-  `;
+  `);
 
   const mapped = rows.map((row) => ({
     date: format(row.date, 'yyyy-MM-dd'),
@@ -116,14 +121,19 @@ export async function getProviderBreakdown(
   userId: string,
   startDate?: Date,
   endDate?: Date,
+  projectId?: string,
 ): Promise<ProviderStat[]> {
   const defaults = getCurrentMonthRange();
   const rangeStart = startDate ?? defaults.startDate;
   const rangeEnd = endDate ?? defaults.endDate;
 
+  const projectFilter = projectId
+    ? Prisma.sql`AND "projectId" = ${projectId}`
+    : Prisma.sql``;
+
   const rows = await prisma.$queryRaw<
     { provider: string; spend: number; requests: bigint }[]
-  >`
+  >(Prisma.sql`
     SELECT provider,
            COALESCE(SUM(cost), 0) AS spend,
            COUNT(*) AS requests
@@ -131,9 +141,10 @@ export async function getProviderBreakdown(
     WHERE "userId" = ${userId}
       AND "timestamp" >= ${rangeStart}
       AND "timestamp" <= ${rangeEnd}
+      ${projectFilter}
     GROUP BY provider
     ORDER BY spend DESC
-  `;
+  `);
 
   const totalSpend = rows.reduce((sum, row) => sum + Number(row.spend), 0);
 
@@ -152,10 +163,15 @@ export async function getModelBreakdown(
   userId: string,
   startDate?: Date,
   endDate?: Date,
+  projectId?: string,
 ): Promise<ModelStat[]> {
   const defaults = getCurrentMonthRange();
   const rangeStart = startDate ?? defaults.startDate;
   const rangeEnd = endDate ?? defaults.endDate;
+
+  const projectFilter = projectId
+    ? Prisma.sql`AND "projectId" = ${projectId}`
+    : Prisma.sql``;
 
   const rows = await prisma.$queryRaw<
     {
@@ -166,7 +182,7 @@ export async function getModelBreakdown(
       inputTokens: number;
       outputTokens: number;
     }[]
-  >`
+  >(Prisma.sql`
     SELECT model,
            provider,
            COALESCE(SUM(cost), 0)          AS spend,
@@ -177,9 +193,10 @@ export async function getModelBreakdown(
     WHERE "userId" = ${userId}
       AND "timestamp" >= ${rangeStart}
       AND "timestamp" <= ${rangeEnd}
+      ${projectFilter}
     GROUP BY model, provider
     ORDER BY spend DESC
-  `;
+  `);
 
   return rows.map((row) => ({
     model: row.model,
@@ -230,6 +247,7 @@ export async function getMetadataStats(
   metadataKey: string,
   startDate?: Date,
   endDate?: Date,
+  projectId?: string,
 ): Promise<MetadataStat[]> {
   const range = getDateRange(
     startDate?.toISOString(),
@@ -244,6 +262,10 @@ export async function getMetadataStats(
     ', ',
   );
 
+  const projectFilter = projectId
+    ? Prisma.sql`AND "projectId" = ${projectId}`
+    : Prisma.sql``;
+
   const rows = await prisma.$queryRaw<
     { value: string; spend: number; requests: bigint }[]
   >(Prisma.sql`
@@ -255,6 +277,7 @@ export async function getMetadataStats(
       AND "timestamp" >= ${rangeStart}
       AND "timestamp" <= ${rangeEnd}
       AND jsonb_extract_path_text("metadata", ${pathSql}) IS NOT NULL
+      ${projectFilter}
     GROUP BY value
     ORDER BY spend DESC
   `);
@@ -443,10 +466,15 @@ export async function getTotalSpend(
   userId: string,
   startDate: Date,
   endDate: Date,
+  projectId?: string,
 ): Promise<TotalSpendResult> {
+  const projectFilter = projectId
+    ? Prisma.sql`AND "projectId" = ${projectId}`
+    : Prisma.sql``;
+
   const rows = await prisma.$queryRaw<
     { provider: string; cost: number; requests: bigint }[]
-  >`
+  >(Prisma.sql`
     SELECT provider,
            COALESCE(SUM(cost), 0) AS cost,
            COUNT(*) AS requests
@@ -454,21 +482,23 @@ export async function getTotalSpend(
     WHERE "userId" = ${userId}
       AND "timestamp" >= ${startDate}
       AND "timestamp" <= ${endDate}
+      ${projectFilter}
     GROUP BY provider
     ORDER BY cost DESC
-  `;
+  `);
 
   const periodMs = endDate.getTime() - startDate.getTime();
   const prevEnd = new Date(startDate.getTime() - 1);
   const prevStart = new Date(prevEnd.getTime() - periodMs);
 
-  const prevRows = await prisma.$queryRaw<{ cost: number }[]>`
+  const prevRows = await prisma.$queryRaw<{ cost: number }[]>(Prisma.sql`
     SELECT COALESCE(SUM(cost), 0) AS cost
     FROM "ApiLog"
     WHERE "userId" = ${userId}
       AND "timestamp" >= ${prevStart}
       AND "timestamp" <= ${prevEnd}
-  `;
+      ${projectFilter}
+  `);
 
   const totalCost = rows.reduce((sum, r) => sum + Number(r.cost), 0);
   const totalRequests = rows.reduce((sum, r) => sum + Number(r.requests), 0);
@@ -491,4 +521,3 @@ export async function getTotalSpend(
     },
   };
 }
-
