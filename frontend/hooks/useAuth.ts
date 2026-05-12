@@ -8,7 +8,7 @@ import type { User } from '@/types';
 interface UseAuthResult {
   user: User | null;
   token: string | null;
-  isAuthenticated: boolean;
+  isAuthenticated: () => boolean;
   login: (user: User, token: string) => void;
   logout: () => void;
 }
@@ -36,7 +36,7 @@ export function useRequireAuth() {
   const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated()) {
       router.replace('/login');
     }
   }, [isAuthenticated, router]);

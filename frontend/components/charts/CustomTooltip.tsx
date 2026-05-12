@@ -1,7 +1,7 @@
-import type { TooltipProps } from 'recharts';
-
-interface CustomTooltipProps<TPayload extends Record<string, unknown> = Record<string, unknown>>
-  extends TooltipProps<number, string> {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number | string }>;
+  label?: string;
   formatter?: (value: number) => string;
 }
 

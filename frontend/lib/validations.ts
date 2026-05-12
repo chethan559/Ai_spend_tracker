@@ -5,10 +5,10 @@ import { z } from 'zod';
  */
 export const loginSchema = z.object({
   email: z
-    .string({ required_error: 'Email is required' })
+    .string()
     .email('Enter a valid email address'),
   password: z
-    .string({ required_error: 'Password is required' })
+    .string()
     .min(1, 'Password is required'),
 });
 
@@ -18,15 +18,15 @@ export const loginSchema = z.object({
 export const signupSchema = z
   .object({
     email: z
-      .string({ required_error: 'Email is required' })
+      .string()
       .email('Enter a valid email address')
       .transform((value) => value.toLowerCase()),
     password: z
-      .string({ required_error: 'Password is required' })
+      .string()
       .min(8, 'Password must be at least 8 characters')
       .max(100, 'Password must be at most 100 characters'),
     confirmPassword: z
-      .string({ required_error: 'Please confirm your password' })
+      .string()
       .min(1, 'Please confirm your password'),
   })
   .refine((data) => data.password === data.confirmPassword, {

@@ -68,11 +68,11 @@ export default function ProviderPieChart({
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={data}
+                data={data as any[]}
                 dataKey="spend"
                 nameKey="provider"
                 outerRadius={100}
-                label={({ percent }) => `${Math.round(percent * 100)}%`}
+                label={({ percent }) => `${Math.round((percent ?? 0) * 100)}%`}
               >
                 {data.map((entry) => (
                   <Cell

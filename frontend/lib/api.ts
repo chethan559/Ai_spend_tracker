@@ -14,6 +14,16 @@ import type {
   User,
 } from '../types';
 
+// The response interceptor below returns response.data, so all api.method<T>() calls
+// resolve to T at runtime. This interface reflects that so callers don't need casts.
+interface UnwrappedAxios {
+  get<T>(url: string, config?: object): Promise<T>;
+  post<T>(url: string, data?: unknown, config?: object): Promise<T>;
+  put<T>(url: string, data?: unknown, config?: object): Promise<T>;
+  delete<T>(url: string, config?: object): Promise<T>;
+  interceptors: ReturnType<typeof axios.create>['interceptors'];
+}
+
 /**
  * Shared API client for the frontend.
  */
@@ -22,7 +32,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-});
+}) as unknown as UnwrappedAxios;
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
@@ -221,7 +231,7 @@ export async function getDailyStats(days: number, timezone?: string): Promise<Da
     const response = await api.get<DailyStatsResponse>('/api/v1/stats/daily', {
       params: { days, timezone },
     });
-    return response.data;
+    return response.stats;
   } catch (error) {
     throw error;
   }
