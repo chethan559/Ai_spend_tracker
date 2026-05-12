@@ -86,7 +86,7 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <p style={{ fontSize: 15, fontWeight: 600, color: '#fff', margin: 0 }}>Name your project</p>
-                  <p style={{ fontSize: 12, color: '#52525b', margin: 0 }}>e.g. "chatbot", "resume-parser"</p>
+                  <p style={{ fontSize: 12, color: '#52525b', margin: 0 }}>Give it a short, descriptive name</p>
                 </div>
               </div>
 
@@ -199,7 +199,7 @@ export default function OnboardingPage() {
 
               <div style={{ marginBottom: 20, fontSize: 12, color: '#52525b', lineHeight: 1.6 }}>
                 <p style={{ margin: '0 0 6px', fontWeight: 600, color: '#a1a1aa' }}>SDK usage:</p>
-                <code style={{ display: 'block', background: '#0a0a0b', border: '1px solid #27272a', borderRadius: 6, padding: '8px 12px', color: '#e4e4e7', fontSize: 11 }}>
+                <code style={{ display: 'block', background: '#0a0a0b', border: '1px solid #27272a', borderRadius: 6, padding: '8px 12px', color: '#e4e4e7', fontSize: 11, wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
                   {`const tracker = new AISpendTracker('${createdProject?.apiKey ?? 'psk_...'}');`}
                 </code>
               </div>
