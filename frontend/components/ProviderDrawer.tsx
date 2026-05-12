@@ -155,7 +155,7 @@ export default function ProviderDrawer({ provider, onClose }: ProviderDrawerProp
                           tick={{ fontSize: 10 }}
                         />
                         <Tooltip
-                          formatter={(v: number | undefined) => [fmt2(v ?? 0), 'Spend']}
+                          formatter={(value) => [`$${Number(value ?? 0).toFixed(4)}`, 'Spend']}
                           labelFormatter={(l) => format(parseISO(l as string), 'MMM d, yyyy')}
                           contentStyle={{
                             background: 'var(--card)',
