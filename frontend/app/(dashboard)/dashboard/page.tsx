@@ -11,19 +11,14 @@ import DailySpendChart from '@/components/charts/DailySpendChart';
 import ProviderPieChart from '@/components/charts/ProviderPieChart';
 import ModelBarChart from '@/components/charts/ModelBarChart';
 import DateRangePicker from '@/components/dashboard/DateRangePicker';
-import FeatureBreakdownTable from '@/components/FeatureBreakdownTable';
-import UserCostTable from '@/components/UserCostTable';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useDailyStats,
   useModelBreakdown,
   useOverviewStats,
   useProviderBreakdown,
 } from '@/hooks/useStats';
-import { useMetadataStats } from '@/hooks/useMetadataStats';
 import useAuthStore from '@/store/authStore';
-import type { MetadataField } from '@/components/MetadataFilterBar';
 
 const PROJECT_LIMITS: Record<string, number> = { free: 1, starter: 3, growth: -1 };
 
@@ -38,7 +33,6 @@ export default function OverviewPage() {
     from: subDays(new Date(), 30),
     to: new Date(),
   }));
-  const [metadataField, setMetadataField] = useState<MetadataField>('feature');
   const [activeProject, setActiveProject] = useState<string | null>(null);
 
   const user = useAuthStore((s) => s.user);
@@ -48,7 +42,6 @@ export default function OverviewPage() {
   const dailyStats    = useDailyStats(30, activeProject);
   const providerStats = useProviderBreakdown(dateRange.from, dateRange.to, activeProject);
   const modelStats    = useModelBreakdown(dateRange.from, dateRange.to, activeProject);
-  const metadataStats = useMetadataStats(metadataField, dateRange);
 
   const isRefreshing =
     overviewStats.isLoading || dailyStats.isLoading ||
@@ -61,7 +54,6 @@ export default function OverviewPage() {
         dailyStats.refetch?.(),
         providerStats.refetch?.(),
         modelStats.refetch?.(),
-        metadataStats.refetch?.(),
       ]);
       toast.success('Refreshed');
     } catch {
@@ -190,60 +182,7 @@ export default function OverviewPage() {
           )}
         </div>
 
-        {/* Metadata breakdown */}
-        <div>
-          <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#52525b', marginBottom: 12 }}>
-            Breakdown
-          </p>
-          <Tabs
-            value={metadataField}
-            onValueChange={(v) => setMetadataField(v as MetadataField)}
-          >
-            <TabsList>
-              <TabsTrigger value="feature">By Feature</TabsTrigger>
-              <TabsTrigger value="userId">By User</TabsTrigger>
-              <TabsTrigger value="environment">By Environment</TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="feature" className="mt-4">
-              {metadataStats.error && metadataField === 'feature' ? (
-                <ErrorMessage message="Failed to load feature breakdown" onRetry={metadataStats.refetch} />
-              ) : (
-                <FeatureBreakdownTable
-                  field="feature"
-                  data={metadataField === 'feature' ? metadataStats.data : undefined}
-                  isLoading={metadataField === 'feature' && metadataStats.isLoading}
-                  dateRange={dateRange}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="userId" className="mt-4">
-              {metadataStats.error && metadataField === 'userId' ? (
-                <ErrorMessage message="Failed to load user breakdown" onRetry={metadataStats.refetch} />
-              ) : (
-                <UserCostTable
-                  data={metadataField === 'userId' ? metadataStats.data : undefined}
-                  isLoading={metadataField === 'userId' && metadataStats.isLoading}
-                  dateRange={dateRange}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="environment" className="mt-4">
-              {metadataStats.error && metadataField === 'environment' ? (
-                <ErrorMessage message="Failed to load environment breakdown" onRetry={metadataStats.refetch} />
-              ) : (
-                <FeatureBreakdownTable
-                  field="environment"
-                  data={metadataField === 'environment' ? metadataStats.data : undefined}
-                  isLoading={metadataField === 'environment' && metadataStats.isLoading}
-                  dateRange={dateRange}
-                />
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
       </div>
 
       <style>{`
