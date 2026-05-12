@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
-import { useProjects } from '@/hooks/useProjects';
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton';
 
 interface ProtectedRouteProps {
@@ -13,19 +12,17 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
-  const { projects, isLoading } = useProjects();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace('/login');
       return;
     }
-    if (!isLoading && projects.length === 0) {
-      router.replace('/onboarding');
-    }
-  }, [isAuthenticated, isLoading, projects.length, router]);
+    setReady(true);
+  }, [isAuthenticated, router]);
 
-  if (!isAuthenticated() || isLoading || projects.length === 0) {
+  if (!ready) {
     return (
       <div className="mx-auto w-full max-w-4xl p-6">
         <CardSkeleton />

@@ -17,18 +17,18 @@ export default function TopBar() {
   return (
     <header
       style={{
-        height: 52,
+        height: 60,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 32px',
+        padding: '0 40px',
         background: '#111113',
         borderBottom: '1px solid #1c1c1f',
         flexShrink: 0,
       }}
     >
       <Link
-        href="/dashboard"
+        href="/projects"
         style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
       >
         <span

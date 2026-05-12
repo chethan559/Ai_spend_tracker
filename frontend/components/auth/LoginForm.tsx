@@ -41,7 +41,7 @@ export default function LoginForm() {
       const response = await login(values.email, values.password);
       loginUser(response.user, response.token);
       toast.success('Logged in successfully');
-      router.push('/dashboard');
+      router.push('/projects');
     } catch (error) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data

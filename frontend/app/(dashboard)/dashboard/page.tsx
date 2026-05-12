@@ -19,6 +19,7 @@ import {
   useProviderBreakdown,
 } from '@/hooks/useStats';
 import useAuthStore from '@/store/authStore';
+import useProjectStore from '@/store/projectStore';
 
 const PROJECT_LIMITS: Record<string, number> = { free: 1, starter: 3, growth: -1 };
 
@@ -33,7 +34,7 @@ export default function OverviewPage() {
     from: subDays(new Date(), 30),
     to: new Date(),
   }));
-  const [activeProject, setActiveProject] = useState<string | null>(null);
+  const { activeProjectId: activeProject, setActiveProject } = useProjectStore();
 
   const user = useAuthStore((s) => s.user);
   const projectLimit = PROJECT_LIMITS[user?.plan ?? 'free'] ?? 1;
