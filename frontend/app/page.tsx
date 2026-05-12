@@ -206,6 +206,46 @@ function MetaCodeBlock() {
   );
 }
 
+// ─── Mini dashboard preview (Step 03) ───────────────────────────────────────
+const PREVIEW_ROWS = [
+  { name: 'resume-parser',    cost:  4.21, pct: 33 },
+  { name: 'chat-assistant',   cost: 12.44, pct: 48 },
+  { name: 'email-summarizer', cost:  1.09, pct:  8 },
+];
+
+function MiniDashboard() {
+  return (
+    <div style={{ background: '#0d0d0f', border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden', fontSize: 12 }}>
+      {/* header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: `1px solid ${BORDER}` }}>
+        <span style={{ fontWeight: 600, color: TEXT }}>Feature Breakdown</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: ORANGE, fontSize: 11 }}>
+          <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+            <span className="animate-ping" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: ORANGE, opacity: 0.7 }} />
+            <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: ORANGE }} />
+          </span>
+          Live
+        </span>
+      </div>
+      {/* rows */}
+      {PREVIEW_ROWS.map(r => (
+        <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderBottom: `1px solid ${BORDER}` }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: ORANGE, flexShrink: 0 }} />
+          <span style={{ flex: 1, color: TEXT, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {r.name}
+          </span>
+          <span style={{ fontFamily: 'monospace', fontWeight: 600, color: TEXT, flexShrink: 0 }}>
+            ${r.cost.toFixed(2)}
+          </span>
+          <div style={{ width: 56, height: 4, borderRadius: 4, background: FAINT, flexShrink: 0, overflow: 'hidden' }}>
+            <div style={{ width: `${r.pct}%`, height: '100%', background: barColor(r.pct), borderRadius: 4 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Friction reducer line ───────────────────────────────────────────────────
 function FrictionNote() {
   return (
@@ -343,36 +383,36 @@ export default function Page() {
           </h2>
         </Fade>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 0 }}>
-          {[
-            {
-              n: '01',
-              title: 'Install the SDK',
-              body: 'npm install @ai-spend/tracker. Wrap your existing AI calls — no other changes needed.',
-              extra: <div style={{ marginTop: 20 }}><CodeBlock /></div>,
-            },
-            {
-              n: '02',
-              title: 'Tag your calls',
-              body: "Pass a feature name, user ID, or environment in the metadata field. That's it.",
-              extra: <MetaCodeBlock />,
-            },
-            {
-              n: '03',
-              title: 'See it in real time',
-              body: 'Your dashboard shows cost by feature, user, and model. Drill in, set budgets, get alerts.',
-              extra: null,
-            },
-          ].map(({ n, title, body, extra }, i) => (
-            <Fade key={n} delay={i * 0.07}>
-              <div style={{ padding: '0 32px 0 0' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: ORANGE, letterSpacing: '0.08em', marginBottom: 14 }}>{n}</div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, letterSpacing: '-0.01em' }}>{title}</h3>
-                <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65 }}>{body}</p>
-                {extra}
-              </div>
-            </Fade>
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 24, alignItems: 'stretch' }}>
+          {/* ── Step 01 ── */}
+          <Fade delay={0}>
+            <div style={{ display: 'flex', flexDirection: 'column', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 28, height: '100%' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: ORANGE, letterSpacing: '0.08em', marginBottom: 14 }}>01</div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, letterSpacing: '-0.01em' }}>Install the SDK</h3>
+              <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65 }}>One command. Works with OpenAI, Anthropic, and Gemini.</p>
+              <div style={{ marginTop: 'auto', paddingTop: 20 }}><CodeBlock /></div>
+            </div>
+          </Fade>
+
+          {/* ── Step 02 ── */}
+          <Fade delay={0.07}>
+            <div style={{ display: 'flex', flexDirection: 'column', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 28, height: '100%' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: ORANGE, letterSpacing: '0.08em', marginBottom: 14 }}>02</div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, letterSpacing: '-0.01em' }}>Tag your calls</h3>
+              <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65 }}>Add a feature name and userId. That single line unlocks the entire breakdown.</p>
+              <div style={{ marginTop: 'auto', paddingTop: 20 }}><MetaCodeBlock /></div>
+            </div>
+          </Fade>
+
+          {/* ── Step 03 ── */}
+          <Fade delay={0.14}>
+            <div style={{ display: 'flex', flexDirection: 'column', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 28, height: '100%' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: ORANGE, letterSpacing: '0.08em', marginBottom: 14 }}>03</div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, letterSpacing: '-0.01em' }}>See it in real time</h3>
+              <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65 }}>Your dashboard updates instantly. Know your most expensive feature in seconds.</p>
+              <div style={{ marginTop: 'auto', paddingTop: 20 }}><MiniDashboard /></div>
+            </div>
+          </Fade>
         </div>
       </section>
 
