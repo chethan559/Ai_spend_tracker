@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -49,80 +49,11 @@ function Spark({ values }: { values: number[] }) {
   );
 }
 
-// ─── Mock FeatureBreakdownTable ─────────────────────────────────────────────
-const ROWS = [
-  { name: 'chat-assistant',    cost: 12.44, req: 384, pct: 48, spark: [4,7,6,10,8,12,15] },
-  { name: 'resume-parser',     cost:  4.21, req: 142, pct: 16, spark: [2,3,4, 3,5, 4, 6] },
-  { name: 'content-generator', cost:  3.76, req: 128, pct: 14, spark: [3,5,3, 6,4, 6, 5] },
-  { name: 'email-summarizer',  cost:  1.09, req:  37, pct:  4, spark: [1,2,1, 2,1, 2, 1] },
-] as const;
-
+// ─── Bar color helper ────────────────────────────────────────────────────────
 function barColor(pct: number) {
   if (pct > 40) return '#ef4444';
   if (pct > 20) return '#f59e0b';
   return '#22c55e';
-}
-
-function MockTable() {
-  const [active, setActive] = useState<string | null>(null);
-  return (
-    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden' }}>
-      <div style={{ padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>Feature Breakdown</span>
-        <span style={{ fontSize: 12, background: ORANGE_DIM, border: `1px solid ${ORANGE_BORDER}`, color: ORANGE, borderRadius: 20, padding: '2px 10px', display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: ORANGE, display: 'inline-block' }} />
-          Live
-        </span>
-      </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-        <thead>
-          <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-            {['Feature', 'Cost', 'Requests', '% of Total', '7d'].map((h, i) => (
-              <th key={h} style={{ padding: '10px 20px', textAlign: i > 0 && i < 3 ? 'right' : i === 3 ? 'left' : 'center', color: MUTED, fontWeight: 500, whiteSpace: 'nowrap' }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {ROWS.map((r) => (
-            <tr
-              key={r.name}
-              onMouseEnter={() => setActive(r.name)}
-              onMouseLeave={() => setActive(null)}
-              style={{ borderBottom: `1px solid ${BORDER}`, background: active === r.name ? 'rgba(255,255,255,0.02)' : 'transparent', transition: 'background 0.12s', cursor: 'default' }}
-            >
-              <td style={{ padding: '12px 20px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: ORANGE, flexShrink: 0 }} />
-                  <span style={{ color: TEXT, fontWeight: 500 }}>{r.name}</span>
-                </span>
-              </td>
-              <td style={{ padding: '12px 20px', textAlign: 'right', color: TEXT, fontFamily: 'monospace', fontWeight: 600 }}>${r.cost.toFixed(2)}</td>
-              <td style={{ padding: '12px 20px', textAlign: 'right', color: MUTED }}>{r.req}</td>
-              <td style={{ padding: '12px 20px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ flex: 1, height: 4, borderRadius: 4, background: FAINT, overflow: 'hidden' }}>
-                    <span style={{ display: 'block', height: '100%', width: `${r.pct}%`, background: barColor(r.pct), borderRadius: 4 }} />
-                  </span>
-                  <span style={{ color: MUTED, fontSize: 11, width: 30, textAlign: 'right' }}>{r.pct}%</span>
-                </span>
-              </td>
-              <td style={{ padding: '12px 20px', textAlign: 'center' }}>
-                <span style={{ display: 'inline-block' }}><Spark values={[...r.spark]} /></span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', borderTop: `1px solid ${BORDER}` }}>
-        {[['Total', '$21.50'], ['Requests', '691'], ['Avg/req', '$0.031']].map(([k, v]) => (
-          <div key={k} style={{ padding: '12px 20px', borderRight: `1px solid ${BORDER}` }}>
-            <div style={{ fontSize: 11, color: MUTED, marginBottom: 2 }}>{k}</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{v}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 // ─── Code block ─────────────────────────────────────────────────────────────
@@ -246,6 +177,188 @@ function MiniDashboard() {
   );
 }
 
+// ─── Hero dashboard mockup ───────────────────────────────────────────────────
+const HD_ROWS_DATA = [
+  { id: 'chat-assistant',    cost: 12.44, req: 384, pct: 48, spark: [4,7,6,10,8,12,15] },
+  { id: 'resume-parser',     cost:  4.21, req: 142, pct: 16, spark: [2,3,4,3,5,4,6]   },
+  { id: 'content-generator', cost:  3.76, req: 128, pct: 14, spark: [3,5,3,6,4,6,5]   },
+  { id: 'email-summarizer',  cost:  1.09, req:  37, pct:  4, spark: [1,2,1,2,1,2,1]   },
+];
+
+const LIVE_EVENTS = [
+  { provider: 'openai',    model: 'gpt-4o',            feature: 'chat-assistant',    cost: 0.0041 },
+  { provider: 'anthropic', model: 'claude-3-5-sonnet', feature: 'resume-parser',     cost: 0.0023 },
+  { provider: 'openai',    model: 'gpt-4o-mini',       feature: 'email-summarizer',  cost: 0.0008 },
+  { provider: 'google',    model: 'gemini-1.5-flash',  feature: 'content-generator', cost: 0.0012 },
+  { provider: 'anthropic', model: 'claude-3-haiku',    feature: 'chat-assistant',    cost: 0.0019 },
+];
+
+const DASH_DAILY   = [14.2, 18.1, 15.8, 22.3, 19.7, 25.4, 21.9, 28.2, 23.8, 26.5, 24.1, 32.7, 29.4, 33.9];
+const DASH_NAV     = ['Overview', 'By Feature', 'By User', 'By Model', 'Budgets', 'Projects', 'Integration'];
+const DASH_PERIODS = ['24h', '7d', '30d', '3m'];
+const PROVIDER_DOT: Record<string, string> = { openai: '#10A37F', anthropic: '#D97706', google: '#4285F4' };
+let _hdId = 10;
+
+interface TickerEvent { id: number; provider: string; model: string; feature: string; cost: number; label: string }
+
+function DashBarChart({ data }: { data: number[] }) {
+  const max = Math.max(...data);
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 58 }}>
+      {data.map((v, i) => (
+        <div key={i} style={{ flex: 1, height: `${(v / max) * 100}%`, borderRadius: '2px 2px 0 0', background: i === data.length - 1 ? ORANGE : 'rgba(249,115,22,0.28)' }} />
+      ))}
+    </div>
+  );
+}
+
+function HeroDashboard() {
+  const [activeNav, setActiveNav] = useState('Overview');
+  const [period, setPeriod]       = useState('7d');
+  const [spend, setSpend]         = useState(284.73);
+  const [reqs, setReqs]           = useState(9241);
+  const [flash, setFlash]         = useState<string | null>(null);
+  const [ticker, setTicker]       = useState<TickerEvent[]>(() =>
+    LIVE_EVENTS.slice(0, 4).map((e, i) => ({ ...e, id: i, label: i === 0 ? 'just now' : `${(i + 1) * 9}s ago` }))
+  );
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const inc = 0.001 + Math.random() * 0.007;
+      setSpend(s => Math.round((s + inc) * 10000) / 10000);
+      setReqs(r => r + Math.floor(Math.random() * 3) + 1);
+
+      const row = HD_ROWS_DATA[Math.floor(Math.random() * HD_ROWS_DATA.length)];
+      setFlash(row.id);
+      setTimeout(() => setFlash(null), 800);
+
+      const tmpl = LIVE_EVENTS[Math.floor(Math.random() * LIVE_EVENTS.length)];
+      const newEv: TickerEvent = {
+        ...tmpl,
+        cost: Math.round((tmpl.cost + (Math.random() * 0.002 - 0.001)) * 10000) / 10000,
+        id: ++_hdId,
+        label: 'just now',
+      };
+      setTicker(prev => [newEv, ...prev.slice(0, 4).map((e, i) => ({ ...e, label: `${(i + 1) * 8}s ago` }))]);
+    }, 3000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const avg = (spend / reqs).toFixed(4);
+  const COL = '1fr 68px 44px 88px 52px';
+
+  return (
+    <div style={{ background: '#0d0d18', border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden', textAlign: 'left', userSelect: 'none' }}>
+
+      {/* Top bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', borderBottom: `1px solid ${BORDER}`, background: 'rgba(0,0,0,0.35)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 22, height: 22, background: ORANGE, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0 }}>$</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>AI Spend Tracker</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: ORANGE }}>
+            <span style={{ position: 'relative', display: 'inline-flex', width: 7, height: 7 }}>
+              <span className="animate-ping" style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: ORANGE, opacity: 0.65 }} />
+              <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: ORANGE }} />
+            </span>
+            Live
+          </span>
+          <div style={{ display: 'flex', gap: 3 }}>
+            {DASH_PERIODS.map(p => (
+              <button key={p} onClick={() => setPeriod(p)} style={{ padding: '3px 10px', borderRadius: 5, fontSize: 11, cursor: 'pointer', border: 'none', background: period === p ? ORANGE : FAINT, color: period === p ? '#fff' : MUTED, transition: 'all 0.15s', fontFamily: 'inherit' }}>{p}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Body: sidebar + main */}
+      <div style={{ display: 'flex' }}>
+
+        {/* Sidebar */}
+        <div style={{ width: 148, borderRight: `1px solid ${BORDER}`, flexShrink: 0, padding: '10px 0' }}>
+          {DASH_NAV.map(item => (
+            <button key={item} onClick={() => setActiveNav(item)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 14px', fontSize: 12, cursor: 'pointer', border: 'none', borderLeft: `2px solid ${activeNav === item ? ORANGE : 'transparent'}`, background: activeNav === item ? 'rgba(249,115,22,0.08)' : 'transparent', color: activeNav === item ? ORANGE : MUTED, transition: 'all 0.12s', fontFamily: 'inherit' }}>
+              {item}
+            </button>
+          ))}
+        </div>
+
+        {/* Main */}
+        <div style={{ flex: 1, padding: 14, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+          {/* Stat cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+            {[
+              { label: 'Total Spend',    value: `$${spend.toFixed(2)}` },
+              { label: 'Total Requests', value: reqs.toLocaleString() },
+              { label: 'Avg Cost / Req', value: `$${avg}` },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ fontSize: 9, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: TEXT, letterSpacing: '-0.03em', fontFamily: "'JetBrains Mono', ui-monospace, monospace" }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Daily bar chart */}
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 12px' }}>
+            <div style={{ fontSize: 9, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Daily Spend — Last 14 Days</div>
+            <DashBarChart data={DASH_DAILY} />
+          </div>
+
+          {/* Feature breakdown table */}
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: COL, borderBottom: `1px solid ${BORDER}`, padding: '6px 12px', gap: 8 }}>
+              {['Feature', 'Cost', 'Req', '% of Total', '7d'].map((h, i) => (
+                <div key={h} style={{ fontSize: 9, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: i === 0 ? 'left' : 'right' }}>{h}</div>
+              ))}
+            </div>
+            {HD_ROWS_DATA.map(r => (
+              <div key={r.id} style={{ display: 'grid', gridTemplateColumns: COL, alignItems: 'center', padding: '7px 12px', gap: 8, borderBottom: `1px solid ${BORDER}`, background: flash === r.id ? 'rgba(249,115,22,0.1)' : 'transparent', transition: 'background 0.5s ease-out' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: ORANGE, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: TEXT, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.id}</span>
+                </div>
+                <div style={{ fontSize: 12, color: TEXT, fontWeight: 600, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>${r.cost.toFixed(2)}</div>
+                <div style={{ fontSize: 12, color: MUTED, textAlign: 'right' }}>{r.req}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
+                  <div style={{ width: 44, height: 3, borderRadius: 2, background: FAINT, overflow: 'hidden' }}>
+                    <div style={{ width: `${r.pct}%`, height: '100%', background: barColor(r.pct), borderRadius: 2 }} />
+                  </div>
+                  <span style={{ fontSize: 10, color: MUTED, width: 26, textAlign: 'right' }}>{r.pct}%</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Spark values={[...r.spark]} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </div>
+
+      {/* Live ticker */}
+      <div style={{ borderTop: `1px solid ${BORDER}`, background: 'rgba(0,0,0,0.35)', padding: '6px 18px', display: 'flex', alignItems: 'center', gap: 16, overflow: 'hidden' }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: ORANGE, flexShrink: 0, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Live</span>
+        <div style={{ display: 'flex', gap: 20, overflow: 'hidden' }}>
+          {ticker.slice(0, 4).map(ev => (
+            <span key={ev.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, color: MUTED, whiteSpace: 'nowrap' }}>
+              <span style={{ width: 4, height: 4, borderRadius: '50%', background: PROVIDER_DOT[ev.provider] ?? MUTED, flexShrink: 0 }} />
+              <span style={{ color: PROVIDER_DOT[ev.provider] ?? MUTED }}>{ev.provider}</span>
+              <span>{ev.model}</span>
+              <span style={{ color: TEXT, fontFamily: "'JetBrains Mono', monospace" }}>${ev.cost.toFixed(4)}</span>
+              <span style={{ color: ORANGE }}>{ev.feature}</span>
+              <span style={{ color: '#3f3f46' }}>{ev.label}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
 // ─── Friction reducer line ───────────────────────────────────────────────────
 function FrictionNote() {
   return (
@@ -292,7 +405,8 @@ export default function Page() {
       </header>
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section style={{ maxWidth: 760, margin: '0 auto', padding: '96px 24px 80px', textAlign: 'center' }}>
+      <section style={{ padding: '96px 24px 80px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <Fade>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: ORANGE_DIM, border: `1px solid ${ORANGE_BORDER}`, borderRadius: 20, padding: '5px 14px', marginBottom: 32, fontSize: 13, color: ORANGE, fontWeight: 500 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: ORANGE, display: 'inline-block' }} />
@@ -335,10 +449,11 @@ export default function Page() {
             Free forever · 50K events/month · no credit card
           </p>
         </Fade>
+        </div>
 
         <Fade delay={0.24}>
-          <div style={{ marginTop: 52 }}>
-            <MockTable />
+          <div style={{ maxWidth: 1100, margin: '52px auto 0' }}>
+            <HeroDashboard />
           </div>
         </Fade>
       </section>
