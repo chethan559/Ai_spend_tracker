@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 
 import { authenticateJWT } from '../middleware/auth';
 import { prisma } from '../config/database';
+import { generateProjectApiKey } from '../utils/auth';
 import { logger } from '../utils/logger';
 
 export const projectsRouter = Router();
@@ -67,7 +68,18 @@ projectsRouter.get('/', async (req: AuthedRequest, res: Response) => {
   if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
   try {
-    const projects = await prisma.project.findMany({ where: { userId } });
+    let projects = await prisma.project.findMany({ where: { userId } });
+
+    // Backfill: generate keys for any existing projects that don't have one yet.
+    const needsKey = projects.filter((p) => !p.apiKey);
+    if (needsKey.length > 0) {
+      await Promise.all(
+        needsKey.map((p) =>
+          prisma.project.update({ where: { id: p.id }, data: { apiKey: generateProjectApiKey() } }),
+        ),
+      );
+      projects = await prisma.project.findMany({ where: { userId } });
+    }
 
     const withStats = await Promise.all(
       projects.map(async (p) => ({ ...p, ...(await buildProjectStats(userId, p.id)) })),
@@ -97,7 +109,12 @@ projectsRouter.post('/', async (req: AuthedRequest, res: Response) => {
 
   try {
     const project = await prisma.project.create({
-      data: { userId, name: parsed.data.name, description: parsed.data.description },
+      data: {
+        userId,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        apiKey: generateProjectApiKey(),
+      },
     });
 
     res.status(201).json({
@@ -203,6 +220,30 @@ projectsRouter.put('/:id', async (req: AuthedRequest, res: Response) => {
       return;
     }
     logger.error('Update project failed', error as Error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/projects/:id/rotate-key
+// ---------------------------------------------------------------------------
+projectsRouter.post('/:id/rotate-key', async (req: AuthedRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
+
+  try {
+    const existing = await prisma.project.findUnique({ where: { id: req.params.id } });
+    if (!existing) { res.status(404).json({ error: 'Project not found' }); return; }
+    if (existing.userId !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
+
+    const updated = await prisma.project.update({
+      where: { id: req.params.id },
+      data: { apiKey: generateProjectApiKey() },
+    });
+
+    res.json({ apiKey: updated.apiKey });
+  } catch (error) {
+    logger.error('Rotate project key failed', error as Error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

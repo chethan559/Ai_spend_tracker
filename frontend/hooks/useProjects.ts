@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createProject, deleteProject, getProjects } from '@/lib/api';
+import { createProject, deleteProject, getProjects, rotateProjectKey } from '@/lib/api';
 import type { Project } from '@/types';
 
 const QUERY_KEY = ['projects'];
@@ -37,6 +37,17 @@ export function useDeleteProject() {
 
   return useMutation({
     mutationFn: (id: string) => deleteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+  });
+}
+
+export function useRotateProjectKey() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => rotateProjectKey(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },

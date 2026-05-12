@@ -83,3 +83,11 @@ export function generateApiKey(): string {
   }
 }
 
+/**
+ * Generate a project-scoped API key with the "psk_" prefix.
+ */
+export function generateProjectApiKey(): string {
+  const { randomBytes } = require('crypto') as typeof import('crypto');
+  return 'psk_' + randomBytes(24).toString('hex');
+}
+

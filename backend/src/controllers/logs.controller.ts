@@ -25,15 +25,18 @@ export async function createLogHandler(
     return;
   }
 
-  const userId = (req as { user?: { id: string } }).user?.id;
+  const authedUser = (req as { user?: { id: string; projectId?: string } }).user;
+  const userId = authedUser?.id;
   if (!userId) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
 
   try {
+    const projectId = authedUser?.projectId ?? validation.data.projectId ?? undefined;
     const log = await createLog(userId, {
       ...validation.data,
+      projectId,
       metadata: validation.data.metadata as Prisma.InputJsonValue | undefined,
     });
     res.status(201).json({ message: 'Log created', log });
@@ -61,15 +64,18 @@ export async function createBatchLogsHandler(
     return;
   }
 
-  const userId = (req as { user?: { id: string } }).user?.id;
+  const authedUserBatch = (req as { user?: { id: string; projectId?: string } }).user;
+  const userId = authedUserBatch?.id;
   if (!userId) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
 
   try {
+    const authedProjectId = authedUserBatch?.projectId;
     const logs = validation.data.map((log) => ({
       ...log,
+      projectId: authedProjectId ?? log.projectId ?? undefined,
       metadata: log.metadata as Prisma.InputJsonValue | undefined,
     }));
     const count = await createBatchLogs(userId, logs);

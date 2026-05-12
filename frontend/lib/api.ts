@@ -372,3 +372,7 @@ export async function createProject(name: string, description?: string): Promise
 export async function deleteProject(id: string): Promise<void> {
   await api.delete<void>(`/api/v1/projects/${id}`);
 }
+
+export async function rotateProjectKey(id: string): Promise<{ apiKey: string }> {
+  return api.post<{ apiKey: string }>(`/api/v1/projects/${id}/rotate-key`);
+}

@@ -115,6 +115,7 @@ export interface TotalSpendProvider {
 export interface Project {
   id: string;
   name: string;
+  apiKey: string;
   description?: string;
   createdAt: string;
   updatedAt: string;

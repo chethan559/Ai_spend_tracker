@@ -53,6 +53,7 @@ model Project {
   id          String   @id @default(uuid())
   userId      String
   name        String
+  apiKey      String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   description String?
@@ -62,6 +63,7 @@ model Project {
 
   @@unique([userId, name])
   @@index([userId])
+  @@index([apiKey])
 }
 
 model Budget {
