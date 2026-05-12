@@ -4,7 +4,7 @@
  */
 export const PLANS = {
   free: {
-    requestLimit: 10000,      // 10K events/month
+    requestLimit: 50000,      // 50K events/month
     projectLimit: 1,          // max 1 project
     dataRetentionDays: 30,    // 30 days of history
     alertsEnabled: false,     // no budget/Slack/email alerts

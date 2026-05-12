@@ -363,7 +363,7 @@ function HeroDashboard() {
 function FrictionNote() {
   return (
     <p style={{ fontSize: 12, color: '#3f3f46', marginTop: 8, textAlign: 'center' }}>
-      No credit card · 10K events free · cancel anytime
+      No credit card · 50K events free · cancel anytime
     </p>
   );
 }
@@ -446,7 +446,7 @@ export default function Page() {
             </Link>
           </div>
           <p style={{ fontSize: 13, color: '#3f3f46', marginTop: 12 }}>
-            Free forever · 10K events/month · no credit card
+            Free forever · 50K events/month · no credit card
           </p>
         </Fade>
         </div>
@@ -583,7 +583,7 @@ export default function Page() {
               price: '$0',
               per: '',
               tag: null,
-              items: ['10,000 events / month', '1 project', '30-day retention', 'Free forever — no expiry', 'Community support'],
+              items: ['50,000 events / month', '1 project', '30-day retention', 'Free forever — no expiry', 'Community support'],
               cta: 'Get started',
               href: '/signup',
             },
