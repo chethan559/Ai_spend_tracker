@@ -128,7 +128,7 @@ function ExpandedRowContent({
                 className="text-xs text-muted-foreground"
               />
               <Tooltip
-                formatter={((v: number | undefined) => [formatCurrency(v ?? 0), 'Cost']) as any}
+                formatter={(value) => [`$${Number(value ?? 0).toFixed(4)}`, 'Cost']}
                 labelFormatter={(l) => format(new Date(l), 'MMM d, yyyy')}
                 contentStyle={{
                   background: 'var(--card)',
