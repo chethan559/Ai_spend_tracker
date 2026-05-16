@@ -52,6 +52,20 @@ export const ANTHROPIC_PRICING: Record<string, { input: number; output: number }
   'claude-3-haiku-20240307':          { input: 0.25,  output: 1.25  },
 };
 
+export const GROQ_PRICING: Record<string, { input: number; output: number }> = {
+  'llama-3.3-70b-versatile':     { input: 0.59,  output: 0.79  },
+  'llama-3.3-70b-specdec':       { input: 0.59,  output: 0.99  },
+  'llama-3.1-70b-versatile':     { input: 0.59,  output: 0.79  },
+  'llama-3.1-8b-instant':        { input: 0.05,  output: 0.08  },
+  'llama3-70b-8192':             { input: 0.59,  output: 0.79  },
+  'llama3-8b-8192':              { input: 0.05,  output: 0.08  },
+  'llama-guard-3-8b':            { input: 0.20,  output: 0.20  },
+  'mixtral-8x7b-32768':          { input: 0.24,  output: 0.24  },
+  'gemma2-9b-it':                { input: 0.20,  output: 0.20  },
+  'gemma-7b-it':                 { input: 0.07,  output: 0.07  },
+  'deepseek-r1-distill-llama-70b': { input: 0.75, output: 0.99 },
+};
+
 export const GOOGLE_PRICING: Record<string, { input: number; output: number }> = {
   // Gemini 2.0 family
   'gemini-2.0-flash':                 { input: 0.10,  output: 0.40  },
@@ -84,6 +98,7 @@ export function calculateCost(
   if (provider === 'openai') table = OPENAI_PRICING;
   else if (provider === 'anthropic') table = ANTHROPIC_PRICING;
   else if (provider === 'google' || provider === 'gemini') table = GOOGLE_PRICING;
+  else if (provider === 'groq') table = GROQ_PRICING;
 
   const pricing = table?.[normalizedModel];
 
@@ -110,5 +125,6 @@ export function isKnownModel(provider: string, model: string): boolean {
   if (provider === 'openai') return normalizedModel in OPENAI_PRICING;
   if (provider === 'anthropic') return normalizedModel in ANTHROPIC_PRICING;
   if (provider === 'google' || provider === 'gemini') return normalizedModel in GOOGLE_PRICING;
+  if (provider === 'groq') return normalizedModel in GROQ_PRICING;
   return false;
 }

@@ -5,6 +5,7 @@ export type AIProvider =
   | 'openai'
   | 'anthropic'
   | 'google'
+  | 'groq'
   | 'cohere'
   | 'replicate';
 
@@ -79,5 +80,20 @@ export interface ApiLog {
 export interface SDKOptions {
   endpoint?: string;
   debug?: boolean;
+}
+
+/**
+ * Payload for the generic tracker.log() method.
+ * cost defaults to 0 and timestamp defaults to now if not provided.
+ */
+export interface LogPayload {
+  provider: AIProvider | string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs?: number;
+  cost?: number;
+  metadata?: LogMetadata;
+  timestamp?: Date;
 }
 
