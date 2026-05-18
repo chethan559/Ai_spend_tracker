@@ -36,7 +36,7 @@ export const loginSchema = z.object({
 });
 
 export const logSchema = z.object({
-  provider: z.enum(['openai', 'anthropic', 'google', 'cohere', 'replicate']),
+  provider: z.enum(['openai', 'anthropic', 'google', 'groq', 'cohere', 'replicate']),
   model: z.string().min(1, 'Model is required'),
   inputTokens: z.number().int().min(0, 'inputTokens must be a non-negative integer'),
   outputTokens: z.number().int().min(0, 'outputTokens must be a non-negative integer'),

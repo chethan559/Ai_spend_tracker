@@ -74,11 +74,11 @@ describe('AnthropicProvider', () => {
       expect.objectContaining({
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': trackerApiKey,
+          Authorization: `Bearer ${trackerApiKey}`,
         },
       }),
     );
-    const loggedCost = mockedAxios.post.mock.calls[0][1].costUsd as number;
+    const loggedCost = mockedAxios.post.mock.calls[0][1].cost as number;
     expect(loggedCost).toBeCloseTo(0.0105);
   });
 
@@ -103,7 +103,7 @@ describe('AnthropicProvider', () => {
 
     await provider.messages(params);
 
-    const loggedCost = mockedAxios.post.mock.calls[0][1].costUsd as number;
+    const loggedCost = mockedAxios.post.mock.calls[0][1].cost as number;
     expect(loggedCost).toBeCloseTo(0.0105);
   });
 
@@ -237,7 +237,7 @@ describe('AnthropicProvider', () => {
           model: 'claude-3-sonnet-20240229',
           inputTokens: 100,
           outputTokens: 50,
-          costUsd: expect.closeTo(0.00105, 5),
+          cost: expect.closeTo(0.00105, 5),
         }),
         expect.any(Object),
       );

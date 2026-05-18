@@ -30,12 +30,11 @@ function sendLog(endpoint: string, apiKey: string, logData: LogData): Promise<vo
   const baseUrl = normalizeEndpoint(endpoint);
   const url = `${baseUrl}/api/v1/log`;
 
-  const { cost, ...rest } = logData;
   return Promise.resolve(
-    axios.post(url, { ...rest, costUsd: cost }, {
+    axios.post(url, logData, {
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
+        Authorization: `Bearer ${apiKey}`,
       },
     }),
   ).then(() => undefined);
