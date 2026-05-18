@@ -15,4 +15,6 @@ module.exports = {
   maxWorkers: 1,
   // Runs before every test file — enforces the production-DB guard.
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/testSafetyGuard.ts'],
+  // Exclude the guard itself from being collected as a test suite.
+  testPathIgnorePatterns: ['/node_modules/', '/testSafetyGuard\\.ts$'],
 };

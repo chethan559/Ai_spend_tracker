@@ -23,7 +23,7 @@ describe('Projects API', () => {
     apiKey = generateApiKey();
     const password = await hashPassword('password123');
     const userA = await prisma.user.create({
-      data: { email: 'proj-a@example.com', password, apiKey, plan: 'free' },
+      data: { email: 'proj-a@example.com', password, apiKey, plan: 'starter' },
     });
     userAId = userA.id;
     token = generateJWT({ userId: userA.id, email: userA.email });
@@ -32,7 +32,7 @@ describe('Projects API', () => {
     // User B — for isolation / 403 tests
     const apiKeyB = generateApiKey();
     const userB = await prisma.user.create({
-      data: { email: 'proj-b@example.com', password, apiKey: apiKeyB, plan: 'free' },
+      data: { email: 'proj-b@example.com', password, apiKey: apiKeyB, plan: 'starter' },
     });
     tokenUserB = generateJWT({ userId: userB.id, email: userB.email });
   });

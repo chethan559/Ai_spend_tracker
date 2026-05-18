@@ -107,7 +107,21 @@ projectsRouter.post('/', async (req: AuthedRequest, res: Response) => {
     return;
   }
 
+  const PROJECT_LIMITS: Record<string, number> = { free: 1, starter: 3, growth: -1 };
+
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { plan: true, _count: { select: { projects: true } } },
+    });
+    const limit = PROJECT_LIMITS[user?.plan ?? 'free'] ?? 1;
+    if (limit !== -1 && (user?._count.projects ?? 0) >= limit) {
+      res.status(403).json({
+        error: `Project limit reached. Your ${user?.plan ?? 'free'} plan allows ${limit} project${limit === 1 ? '' : 's'}.`,
+      });
+      return;
+    }
+
     const project = await prisma.project.create({
       data: {
         userId,
