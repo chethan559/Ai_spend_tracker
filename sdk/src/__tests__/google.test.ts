@@ -64,12 +64,13 @@ describe('GoogleProvider', () => {
         model: 'gemini-pro',
         inputTokens: 1000,
         outputTokens: 500,
-        cost: 0.00125,
+        costUsd: 0.00125,
         timestamp: expect.any(Date),
       }),
       expect.objectContaining({
         headers: {
-          Authorization: `Bearer ${trackerApiKey}`,
+          'Content-Type': 'application/json',
+          'x-api-key': trackerApiKey,
         },
       }),
     );
@@ -94,7 +95,7 @@ describe('GoogleProvider', () => {
     expect(mockedAxios.post).toHaveBeenCalledWith(
       `${endpoint}/api/v1/log`,
       expect.objectContaining({
-        cost: 0.00125,
+        costUsd: 0.00125,
       }),
       expect.any(Object),
     );
@@ -210,7 +211,7 @@ describe('GoogleProvider', () => {
           model: 'gemini-pro',
           inputTokens: 100,
           outputTokens: 50,
-          cost: expect.closeTo(0.000125, 6),
+          costUsd: expect.closeTo(0.000125, 6),
         }),
         expect.any(Object),
       );

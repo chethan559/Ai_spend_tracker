@@ -67,12 +67,13 @@ describe('OpenAIProvider', () => {
         model: 'gpt-4',
         inputTokens: 1000,
         outputTokens: 500,
-        cost: 0.06,
+        costUsd: 0.06,
         timestamp: expect.any(Date),
       }),
       expect.objectContaining({
         headers: {
-          Authorization: `Bearer ${trackerApiKey}`,
+          'Content-Type': 'application/json',
+          'x-api-key': trackerApiKey,
         },
       }),
     );
@@ -177,7 +178,7 @@ describe('OpenAIProvider', () => {
           model: 'gpt-4o',
           inputTokens: 200,
           outputTokens: 80,
-          cost: expect.closeTo(0.002200, 4),
+          costUsd: expect.closeTo(0.002200, 4),
         }),
         expect.any(Object),
       );
