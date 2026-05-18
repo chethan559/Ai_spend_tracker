@@ -24,12 +24,18 @@ import useProjectStore from '@/store/projectStore';
 const PROJECT_LIMITS: Record<string, number> = { free: 1, starter: 3, growth: -1 };
 
 const PERIODS: { label: string; days: number }[] = [
-  { label: '7d',  days: 7  },
-  { label: '30d', days: 30 },
-  { label: '90d', days: 90 },
+  { label: '7d',  days: 7   },
+  { label: '30d', days: 30  },
+  { label: '90d', days: 90  },
+  { label: 'All', days: 0   },
 ];
 
+// "All" uses this as the chart window (days) and this start date
+const ALL_TIME_DAYS = 1825; // 5 years
+const ALL_TIME_FROM = new Date('2020-01-01');
+
 export default function OverviewPage() {
+  const [activePeriod, setActivePeriod] = useState(30);
   const [dateRange, setDateRange] = useState(() => ({
     from: subDays(new Date(), 30),
     to: new Date(),
@@ -40,7 +46,7 @@ export default function OverviewPage() {
   const projectLimit = PROJECT_LIMITS[user?.plan ?? 'free'] ?? 1;
 
   const overviewStats = useOverviewStats(dateRange.from, dateRange.to, activeProject);
-  const dailyStats    = useDailyStats(30, activeProject);
+  const dailyStats    = useDailyStats(activePeriod === 0 ? ALL_TIME_DAYS : activePeriod, activeProject);
   const providerStats = useProviderBreakdown(dateRange.from, dateRange.to, activeProject);
   const modelStats    = useModelBreakdown(dateRange.from, dateRange.to, activeProject);
 
@@ -63,7 +69,11 @@ export default function OverviewPage() {
   };
 
   const handlePeriod = (days: number) => {
-    setDateRange({ from: subDays(new Date(), days), to: new Date() });
+    setActivePeriod(days);
+    setDateRange({
+      from: days === 0 ? ALL_TIME_FROM : subDays(new Date(), days),
+      to: new Date(),
+    });
   };
 
   return (
@@ -94,9 +104,7 @@ export default function OverviewPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {PERIODS.map(({ label, days }) => {
-            const active =
-              Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / 86400000) === days - 1 ||
-              Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / 86400000) === days;
+            const active = activePeriod === days;
             return (
               <button
                 key={label}
