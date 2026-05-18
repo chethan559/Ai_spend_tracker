@@ -113,9 +113,9 @@ describe('Unknown model fallback', () => {
     expect(isEstimated).toBe(true);
   });
 
-  it('returns a non-zero cost for unknown model (falls back to gpt-4o pricing)', () => {
+  it('returns 0 cost for unknown model', () => {
     const { cost } = calculateCost('openai', 'gpt-99-ultra', 1000, 1000);
-    expect(cost).toBeGreaterThan(0);
+    expect(cost).toBe(0);
   });
 
   it('returns isEstimated: true for an unknown Anthropic model', () => {

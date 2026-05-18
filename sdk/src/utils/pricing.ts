@@ -53,17 +53,18 @@ export const ANTHROPIC_PRICING: Record<string, { input: number; output: number }
 };
 
 export const GROQ_PRICING: Record<string, { input: number; output: number }> = {
-  'llama-3.3-70b-versatile':     { input: 0.59,  output: 0.79  },
-  'llama-3.3-70b-specdec':       { input: 0.59,  output: 0.99  },
-  'llama-3.1-70b-versatile':     { input: 0.59,  output: 0.79  },
-  'llama-3.1-8b-instant':        { input: 0.05,  output: 0.08  },
-  'llama3-70b-8192':             { input: 0.59,  output: 0.79  },
-  'llama3-8b-8192':              { input: 0.05,  output: 0.08  },
-  'llama-guard-3-8b':            { input: 0.20,  output: 0.20  },
-  'mixtral-8x7b-32768':          { input: 0.24,  output: 0.24  },
-  'gemma2-9b-it':                { input: 0.20,  output: 0.20  },
-  'gemma-7b-it':                 { input: 0.07,  output: 0.07  },
-  'deepseek-r1-distill-llama-70b': { input: 0.75, output: 0.99 },
+  'llama-3.3-70b-versatile':  { input: 0.59,  output: 0.79  },
+  'llama-3.1-70b-versatile':  { input: 0.59,  output: 0.79  },
+  'llama-3.1-8b-instant':     { input: 0.05,  output: 0.08  },
+  'llama3-70b-8192':          { input: 0.59,  output: 0.79  },
+  'llama3-8b-8192':           { input: 0.05,  output: 0.08  },
+  'mixtral-8x7b-32768':       { input: 0.24,  output: 0.24  },
+  'gemma2-9b-it':             { input: 0.20,  output: 0.20  },
+};
+
+export const TOGETHER_PRICING: Record<string, { input: number; output: number }> = {
+  'mistralai/mixtral-8x7b':   { input: 0.60,  output: 0.60  },
+  'meta-llama/llama-3-70b':   { input: 0.90,  output: 0.90  },
 };
 
 export const GOOGLE_PRICING: Record<string, { input: number; output: number }> = {
@@ -99,18 +100,13 @@ export function calculateCost(
   else if (provider === 'anthropic') table = ANTHROPIC_PRICING;
   else if (provider === 'google' || provider === 'gemini') table = GOOGLE_PRICING;
   else if (provider === 'groq') table = GROQ_PRICING;
+  else if (provider === 'together') table = TOGETHER_PRICING;
 
   const pricing = table?.[normalizedModel];
 
   if (!pricing) {
-    console.warn(
-      `[AISpendTracker] Unknown model "${model}" for provider "${provider}". ` +
-      `Cost estimated using GPT-4o pricing. ` +
-      `Please open an issue to add support for this model.`,
-    );
-    const fallback = OPENAI_PRICING['gpt-4o'];
-    const cost = ((inputTokens * fallback.input) + (outputTokens * fallback.output)) / 1_000_000;
-    return { cost, isEstimated: true };
+    console.warn(`[AISpendTracker] Unknown model "${model}" for provider "${provider}". Cost set to $0.`);
+    return { cost: 0, isEstimated: true };
   }
 
   const cost = ((inputTokens * pricing.input) + (outputTokens * pricing.output)) / 1_000_000;
@@ -126,5 +122,6 @@ export function isKnownModel(provider: string, model: string): boolean {
   if (provider === 'anthropic') return normalizedModel in ANTHROPIC_PRICING;
   if (provider === 'google' || provider === 'gemini') return normalizedModel in GOOGLE_PRICING;
   if (provider === 'groq') return normalizedModel in GROQ_PRICING;
+  if (provider === 'together') return normalizedModel in TOGETHER_PRICING;
   return false;
 }

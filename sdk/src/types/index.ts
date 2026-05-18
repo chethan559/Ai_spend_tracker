@@ -6,6 +6,7 @@ export type AIProvider =
   | 'anthropic'
   | 'google'
   | 'groq'
+  | 'together'
   | 'cohere'
   | 'replicate';
 

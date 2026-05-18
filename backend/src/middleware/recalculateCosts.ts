@@ -45,7 +45,7 @@ function recalcEvent(event: RawLogEvent): RawLogEvent {
     cost: calculatedCost,
     cost_usd: calculatedCost,
     ...(estimated
-      ? { metadata: { ...(event.metadata ?? {}), _cost_estimated: true } }
+      ? { metadata: { ...(event.metadata ?? {}), _cost_unknown: true } }
       : {}),
   };
 }
@@ -53,7 +53,7 @@ function recalcEvent(event: RawLogEvent): RawLogEvent {
 /**
  * Recalculates cost for every log event using the server-side pricing table,
  * overwriting the SDK-provided cost before the DB write.
- * Unknown models use gpt-4o fallback pricing and receive metadata._cost_estimated = true.
+ * Unknown models use gpt-4o fallback pricing and receive metadata._cost_unknown = true.
  */
 export function recalculateCosts(
   req: Request,

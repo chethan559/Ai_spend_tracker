@@ -348,7 +348,7 @@ describe('Logs and Stats API', () => {
       expect(response.body.log.cost).toBeCloseTo(0.0125, 6);
     });
 
-    it('uses fallback pricing and sets _cost_estimated for unknown model (single log)', async () => {
+    it('sets cost to $0 and sets _cost_unknown for unknown model (single log)', async () => {
       const response = await request(app)
         .post('/api/v1/log')
         .set('Authorization', `Bearer ${apiKey}`)
@@ -362,9 +362,8 @@ describe('Logs and Stats API', () => {
 
       expect(response.status).toBe(201);
       const log = await prisma.apiLog.findFirst({ where: { userId } });
-      expect((log?.metadata as Record<string, unknown>)?._cost_estimated).toBe(true);
-      // fallback is gpt-4o: (500*5 + 200*15) / 1_000_000 = 0.0055
-      expect(log?.cost).toBeCloseTo(0.0055, 6);
+      expect((log?.metadata as Record<string, unknown>)?._cost_unknown).toBe(true);
+      expect(log?.cost).toBe(0);
     });
 
     it('overwrites wrong costs for known models in a batch', async () => {
@@ -389,7 +388,7 @@ describe('Logs and Stats API', () => {
       expect(log?.cost).toBeCloseTo(0.0009, 6);
     });
 
-    it('sets _cost_estimated for unknown model in a batch', async () => {
+    it('sets _cost_unknown for unknown model in a batch', async () => {
       const response = await request(app)
         .post('/api/v1/log/batch')
         .set('Authorization', `Bearer ${apiKey}`)
@@ -405,7 +404,7 @@ describe('Logs and Stats API', () => {
 
       expect(response.status).toBe(201);
       const log = await prisma.apiLog.findFirst({ where: { userId } });
-      expect((log?.metadata as Record<string, unknown>)?._cost_estimated).toBe(true);
+      expect((log?.metadata as Record<string, unknown>)?._cost_unknown).toBe(true);
     });
   });
 

@@ -67,12 +67,29 @@ const GOOGLE_PRICING: Record<string, { input: number; output: number }> = {
   'gemini-1.0-pro':                   { input: 0.50,  output: 1.50  },
 };
 
+const GROQ_PRICING: Record<string, { input: number; output: number }> = {
+  'llama-3.3-70b-versatile':  { input: 0.59,  output: 0.79  },
+  'llama-3.1-70b-versatile':  { input: 0.59,  output: 0.79  },
+  'llama-3.1-8b-instant':     { input: 0.05,  output: 0.08  },
+  'llama3-70b-8192':          { input: 0.59,  output: 0.79  },
+  'llama3-8b-8192':           { input: 0.05,  output: 0.08  },
+  'mixtral-8x7b-32768':       { input: 0.24,  output: 0.24  },
+  'gemma2-9b-it':             { input: 0.20,  output: 0.20  },
+};
+
+const TOGETHER_PRICING: Record<string, { input: number; output: number }> = {
+  'mistralai/mixtral-8x7b':   { input: 0.60,  output: 0.60  },
+  'meta-llama/llama-3-70b':   { input: 0.90,  output: 0.90  },
+};
+
 function tableForProvider(
   provider: string,
 ): Record<string, { input: number; output: number }> | null {
   if (provider === 'openai') return OPENAI_PRICING;
   if (provider === 'anthropic') return ANTHROPIC_PRICING;
   if (provider === 'google' || provider === 'gemini') return GOOGLE_PRICING;
+  if (provider === 'groq') return GROQ_PRICING;
+  if (provider === 'together') return TOGETHER_PRICING;
   return null;
 }
 
@@ -86,9 +103,8 @@ export function calculateCost(
   const pricing = table?.[model.toLowerCase().trim()];
 
   if (!pricing) {
-    // Unknown model — fall back to gpt-4o pricing as a conservative upper bound.
-    const fallback = OPENAI_PRICING['gpt-4o'];
-    return ((inputTokens * fallback.input) + (outputTokens * fallback.output)) / 1_000_000;
+    console.warn(`[AISpendTracker] Unknown model "${model}" for provider "${provider}". Cost set to $0.`);
+    return 0;
   }
 
   return ((inputTokens * pricing.input) + (outputTokens * pricing.output)) / 1_000_000;
