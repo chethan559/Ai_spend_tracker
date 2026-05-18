@@ -76,7 +76,7 @@ export async function getDailyStats(
     endDate = options.endDate;
   } else {
     const days = options.days ?? 30;
-    endDate = startOfDay(new Date());
+    endDate = new Date(); // current moment — includes all logs created today
     startDate = startOfDay(subDays(endDate, days - 1));
   }
 
