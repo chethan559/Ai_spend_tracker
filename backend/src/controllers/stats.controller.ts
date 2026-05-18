@@ -13,10 +13,17 @@ import {
 import { logger } from '../utils/logger';
 
 function parseDate(value?: string): Date | undefined {
-  if (!value) {
-    return undefined;
-  }
+  if (!value) return undefined;
   const parsed = parseISO(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+// Date-only strings (YYYY-MM-DD) are midnight UTC; for an end-date we want
+// the very end of that day so logs created any time on that day are included.
+function parseEndDate(value?: string): Date | undefined {
+  if (!value) return undefined;
+  const suffix = value.length === 10 ? 'T23:59:59.999Z' : '';
+  const parsed = parseISO(value + suffix);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 }
 
@@ -48,7 +55,7 @@ export async function getDailyStats(
   }
 
   const startDate = parseDate(req.query.startDate as string | undefined);
-  const endDate = parseDate(req.query.endDate as string | undefined);
+  const endDate = parseEndDate(req.query.endDate as string | undefined);
 
   const projectId = (req.query.projectId as string | undefined) || undefined;
 
@@ -91,7 +98,7 @@ export async function getProviderBreakdown(
 
   const startDate = parseDate(req.query.startDate as string | undefined)
     ?? startOfMonth(new Date());
-  const endDate = parseDate(req.query.endDate as string | undefined)
+  const endDate = parseEndDate(req.query.endDate as string | undefined)
     ?? endOfMonth(new Date());
 
   if (!startDate || !endDate) {
@@ -134,7 +141,7 @@ export async function getModelBreakdown(
 
   const startDate = parseDate(req.query.startDate as string | undefined)
     ?? startOfMonth(new Date());
-  const endDate = parseDate(req.query.endDate as string | undefined)
+  const endDate = parseEndDate(req.query.endDate as string | undefined)
     ?? endOfMonth(new Date());
 
   if (!startDate || !endDate) {
@@ -221,7 +228,7 @@ export async function getTotalSpendHandler(
 
   const startDate = parseDate(req.query.startDate as string | undefined)
     ?? startOfMonth(new Date());
-  const endDate = parseDate(req.query.endDate as string | undefined)
+  const endDate = parseEndDate(req.query.endDate as string | undefined)
     ?? endOfMonth(new Date());
 
   const projectId = (req.query.projectId as string | undefined) || undefined;
@@ -256,7 +263,7 @@ export async function getMetadataStats(
 
   const startDate = parseDate(req.query.startDate as string | undefined)
     ?? startOfMonth(new Date());
-  const endDate = parseDate(req.query.endDate as string | undefined)
+  const endDate = parseEndDate(req.query.endDate as string | undefined)
     ?? endOfMonth(new Date());
 
   if (!startDate || !endDate) {

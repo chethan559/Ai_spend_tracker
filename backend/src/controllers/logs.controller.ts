@@ -146,7 +146,9 @@ export async function getOverviewHandler(
     ? new Date(validation.data.startDate)
     : undefined;
   const end = validation.data.endDate
-    ? new Date(validation.data.endDate)
+    ? new Date(validation.data.endDate.length === 10
+        ? validation.data.endDate + 'T23:59:59.999Z'
+        : validation.data.endDate)
     : undefined;
 
   const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
